@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30503.244
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitTracker", "GitTracker\GitTracker.csproj", "{ECAB3FC5-740F-4B78-A26F-89F21DD93CA6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitTracker.Tests", "GitTracker.Tests\GitTracker.Tests.csproj", "{3D92A4E1-74C1-4449-948D-6602AECD4CED}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{ECAB3FC5-740F-4B78-A26F-89F21DD93CA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECAB3FC5-740F-4B78-A26F-89F21DD93CA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECAB3FC5-740F-4B78-A26F-89F21DD93CA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECAB3FC5-740F-4B78-A26F-89F21DD93CA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D92A4E1-74C1-4449-948D-6602AECD4CED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D92A4E1-74C1-4449-948D-6602AECD4CED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D92A4E1-74C1-4449-948D-6602AECD4CED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D92A4E1-74C1-4449-948D-6602AECD4CED}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A2706001-D024-47F7-BF5B-7B943F06CD68}
+	EndGlobalSection
+EndGlobal
