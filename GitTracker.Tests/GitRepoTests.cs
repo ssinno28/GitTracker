@@ -1,67 +1,21 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using GitTracker.Helpers;
-using GitTracker.Interfaces;
-using GitTracker.Tests.Helpers;
+using GitTracker.Models;
 using LibGit2Sharp;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace GitTracker.Tests
 {
-    public class GitRepoTests : IDisposable
+    public class GitRepoTests : BaseTest
     {
-        private readonly ServiceProvider _serviceProvider;
-        private readonly string _localPath;
-        private readonly string _remotePath;
-        private readonly IGitRepo _gitRepo;
-
-        private string _email = "john.doe@gmail.com";
-        private readonly string _firstCommitId;
-
-        public GitRepoTests()
-        {
-            string settingsPath
-                = Path.GetFullPath(Path.Combine($"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}", @"..\..\..\settings"));
-
-            _localPath = $"{settingsPath}\\local-repo";
-            _remotePath = $"{settingsPath}\\remote-repo";
-
-            _serviceProvider = new ServiceCollection()
-                .AddLogging(x => x.AddConsole())
-                .AddGitTracking(_localPath, "test", _remotePath, string.Empty)
-                .BuildServiceProvider();
-
-            if (!Directory.Exists(_remotePath) || !Repository.IsValid(_remotePath))
-            {
-                Repository.Init(_remotePath, true);
-            }
-
-            if (!Directory.Exists(_localPath) || !Repository.IsValid(_localPath))
-            {
-                Repository.Init(_localPath);
-            }
-
-            _gitRepo = _serviceProvider.GetService<IGitRepo>();
-            
-            string filePath = Path.Combine(_localPath, "fileToCommit.txt");
-            File.WriteAllText(filePath, "Testing service");
-
-            _gitRepo.Stage(filePath);
-            _firstCommitId = _gitRepo.Commit("first commit", _email);
-        }
-
         [Fact]
         public void Test_Get_Diff_From_Head()
         {
             var newContent = "Testing unstage files again";
-            File.WriteAllText(Path.Combine(_localPath, "fileToCommit.txt"), newContent);
+            File.WriteAllText(Path.Combine(LocalPath, "fileToCommit.txt"), newContent);
 
-            var diff = _gitRepo.GetDiffFromHead();
+            var diff = GitRepo.GetDiffFromHead();
 
             Assert.NotEmpty(diff);
             Assert.Equal(ChangeKind.Modified, diff.First().ChangeKind);
@@ -70,26 +24,40 @@ namespace GitTracker.Tests
         [Fact]
         public void Test_Push()
         {
-            bool result = _gitRepo.Push(_email);
+            bool result = GitRepo.Push(Email);
             Assert.True(result);
+        }   
+        
+        [Fact]
+        public void Test_Pull()
+        {
+            GitRepo.Push(Email);
+
+            GitConfig.LocalPath = SecondLocalPath;
+
+            bool result = GitRepo.Pull(Email);
+            Assert.True(result);
+
+            var commits = GitRepo.GetCommits();
+            Assert.NotEmpty(commits);
         }
 
         [Fact]
         public void Test_Get_Diff_From_Multiple_Commits()
         {
-            string filePath = Path.Combine(_localPath, "fileToCommit2.txt");
+            string filePath = Path.Combine(LocalPath, "fileToCommit2.txt");
             File.WriteAllText(filePath, "testing");
-            _gitRepo.Stage(filePath);
+            GitRepo.Stage(filePath);
 
-            string secondCommitId = _gitRepo.Commit("first test commit", _email);
+            string secondCommitId = GitRepo.Commit("first test commit", Email);
 
-            string deleteFilePath = Path.Combine(_localPath, "fileToCommit.txt");
+            string deleteFilePath = Path.Combine(LocalPath, "fileToCommit.txt");
             File.Delete(deleteFilePath);
-            _gitRepo.Stage(deleteFilePath);
+            GitRepo.Stage(deleteFilePath);
 
-            string thirdCommitId = _gitRepo.Commit("second test commit", _email);
+            string thirdCommitId = GitRepo.Commit("second test commit", Email);
 
-            var diff = _gitRepo.GetDiff(new List<string>(), _firstCommitId, thirdCommitId);
+            var diff = GitRepo.GetDiff(new List<string>(), FirstCommitId, thirdCommitId);
 
             var deletedDiff = diff.First(x => x.Path.Equals("fileToCommit.txt"));
             var addedDiff = diff.First(x => x.Path.Equals("fileToCommit2.txt"));
@@ -97,12 +65,43 @@ namespace GitTracker.Tests
             Assert.NotEmpty(diff);
             Assert.Equal(ChangeKind.Added, addedDiff.ChangeKind);
             Assert.Equal(ChangeKind.Deleted, deletedDiff.ChangeKind);
+        }        
+        
+        [Fact]
+        public void Test_Checkout_Deleted_Path()
+        {
+            string filePath = Path.Combine(LocalPath, "fileToCommit2.txt");
+            File.WriteAllText(filePath, "testing");
+            GitRepo.Stage(filePath);
+
+            string secondCommitId = GitRepo.Commit("first test commit", Email);
+
+            string deleteFilePath = Path.Combine(LocalPath, "fileToCommit.txt");
+            File.Delete(deleteFilePath);
+            GitRepo.Stage(deleteFilePath);
+
+            string thirdCommitId = GitRepo.Commit("second test commit", Email);
+
+            var diff = GitRepo.GetDiff(new List<string>(), FirstCommitId, thirdCommitId);
+
+            var deletedDiff = diff.First(x => x.Path.Equals("fileToCommit.txt"));
+            var addedDiff = diff.First(x => x.Path.Equals("fileToCommit2.txt"));
+
+            Assert.NotEmpty(diff);
+            Assert.Equal(ChangeKind.Added, addedDiff.ChangeKind);
+            Assert.Equal(ChangeKind.Deleted, deletedDiff.ChangeKind);
+
+            GitRepo.CheckoutPaths(FirstCommitId, "fileToCommit.txt");
+            Assert.True(File.Exists(Path.Combine(LocalPath, "fileToCommit.txt")));
+
+            GitRepo.Reset(ResetMode.Hard);
+            Assert.False(File.Exists(Path.Combine(LocalPath, "fileToCommit.txt")));
         }
 
         [Fact]
         public void Test_Get_Diff_From_Commit()
         {
-            var diff = _gitRepo.GetDiff(new List<string>(), _firstCommitId);
+            var diff = GitRepo.GetDiff(new List<string>(), FirstCommitId);
             var addedDiff = diff.First(x => x.Path.Equals("fileToCommit.txt"));
 
             Assert.NotEmpty(diff);
@@ -113,15 +112,14 @@ namespace GitTracker.Tests
         public void TestGetUnstagedFiles()
         {
             var content = "Testing unstage files";
-            File.WriteAllText(Path.Combine(_localPath, "fileToCommit.txt"), content);
+            File.WriteAllText(Path.Combine(LocalPath, "fileToCommit.txt"), content);
 
-            var gitRepo = _serviceProvider.GetService<IGitRepo>();
-            var untrackedFiles = gitRepo.GetUnstagedItems();
+            var untrackedFiles = GitRepo.GetUnstagedItems();
 
-            gitRepo.Stage(untrackedFiles.ToArray());
-            gitRepo.Unstage(untrackedFiles.ToArray());
+            GitRepo.Stage(untrackedFiles.ToArray());
+            GitRepo.Unstage(untrackedFiles.ToArray());
 
-            untrackedFiles = gitRepo.GetUnstagedItems();
+            untrackedFiles = GitRepo.GetUnstagedItems();
 
             Assert.Equal(1, untrackedFiles.Count);
         }
@@ -130,21 +128,13 @@ namespace GitTracker.Tests
         public void TestGetStagedFiles()
         {
             var content = "Testing stage files";
-            string filePath = Path.Combine(_localPath, "fileToCommit.txt");
+            string filePath = Path.Combine(LocalPath, "fileToCommit.txt");
             File.WriteAllText(filePath, content);
 
-            var gitRepo = _serviceProvider.GetService<IGitRepo>();
-            gitRepo.Stage("fileToCommit.txt");
-
-            var stagedFiles = gitRepo.GetStagedItems();
+            GitRepo.Stage("fileToCommit.txt");
+            var stagedFiles = GitRepo.GetStagedItems();
 
             Assert.Equal(1, stagedFiles.Count);
-        }
-
-        public void Dispose()
-        {
-            DirectoryHelper.DeleteDirectory(_localPath);
-            DirectoryHelper.DeleteDirectory(_remotePath);
         }
     }
 }

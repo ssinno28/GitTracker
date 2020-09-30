@@ -41,6 +41,21 @@ namespace GitTracker.Helpers
                 {
                     services.AddScoped(typeof(IValueProvider), exportedType);
                 }
+                
+                if (exportedType.ImplementedInterfaces.Contains(typeof(ICreateOperation)))
+                {
+                    services.AddScoped(typeof(ICreateOperation), exportedType);
+                }    
+                
+                if (exportedType.ImplementedInterfaces.Contains(typeof(IUpdateOperation)))
+                {
+                    services.AddScoped(typeof(IUpdateOperation), exportedType);
+                } 
+                
+                if (exportedType.ImplementedInterfaces.Contains(typeof(IDeleteOperation)))
+                {
+                    services.AddScoped(typeof(IDeleteOperation), exportedType);
+                }
             }
 
             return services;

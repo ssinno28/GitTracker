@@ -215,11 +215,23 @@ namespace GitTracker.Repositories
             string branch;
             using (var repo = LocalRepo)
             {
-                var currentBranch = repo.Branches.FirstOrDefault(x => x.IsCurrentRepositoryHead);
+                var currentBranch = repo.Branches.First(x => x.IsCurrentRepositoryHead);
                 branch = currentBranch.FriendlyName;
             }
 
             return branch;
+        }
+
+        public string GetCurrentCommitId()
+        {
+            string commitId;
+            using (var repo = LocalRepo)
+            {
+                var currentBranch = repo.Branches.First(x => x.IsCurrentRepositoryHead);
+                commitId = currentBranch.Tip.Id.ToString();
+            }
+
+            return commitId;
         }
 
         public Task ChangeBranch(string branch)
@@ -359,6 +371,14 @@ namespace GitTracker.Repositories
             return count;
         }
 
+        public void CheckoutPaths(string commitId, params string[] filePaths)
+        {
+            using (var repo = LocalRepo)
+            {
+                repo.CheckoutPaths(commitId, filePaths);
+            }
+        }
+
         public IList<GitDiff> GetDiff(IList<string> paths, string id, string endId = null)
         {
             IList<PatchEntryChanges> patchEntryChanges = new List<PatchEntryChanges>();
@@ -392,7 +412,6 @@ namespace GitTracker.Repositories
                 {
                     var endCommit = commitList.First(x => x.Id.ToString().Equals(endId));
                     var indexOfEndCommit = commitList.IndexOf(endCommit);
-
                     repoDifferences =
                         repo.Diff.Compare<Patch>((Equals(commitList[indexOfCommit], null))
                             ? null

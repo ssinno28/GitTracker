@@ -30,6 +30,12 @@ namespace GitTracker.Providers
             _logger = loggerFactory.CreateLogger<FileProvider>();
         }
 
+        public string GetFile(string path)
+        {
+            string absolutePath = Path.Combine(_gitConfig.LocalPath, path);
+            return File.ReadAllText(absolutePath);
+        }
+
         public IList<string> GetFiles(IList<Type> contentTypes)
         {
             IList<string> filePaths = new List<string>();

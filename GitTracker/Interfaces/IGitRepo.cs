@@ -21,8 +21,10 @@ namespace GitTracker.Interfaces
         IList<GitDiff> GetDiffFromHead();
         IList<string> GetBranches();
         string GetCurrentBranch();
+        string GetCurrentCommitId();
         Task ChangeBranch(string branch);
         void CreateBranch(string branch);
         bool IsGithubPushAllowed(string payload, string signatureWithPrefix);
+        void CheckoutPaths(string commitId, params string[] filePaths);
     }
 }
