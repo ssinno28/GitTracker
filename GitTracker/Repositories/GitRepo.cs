@@ -78,8 +78,15 @@ namespace GitTracker.Repositories
                 var signature = new Signature(
                     new Identity(username ?? email, email), DateTimeOffset.Now);
 
-                // Pull
-                Commands.Pull(repo, signature, options);
+                try
+                {
+                    // Pull
+                    Commands.Pull(repo, signature, options);
+                }
+                catch (NonFastForwardException ex)
+                {
+                    var conflicts = repo.Index.Conflicts;
+                }
             }
 
             return true;

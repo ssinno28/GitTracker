@@ -1,21 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using GitTracker.Interfaces;
 using GitTracker.Models;
 using GitTracker.Tests.Models;
-using Moq;
 using Xunit;
 
 namespace GitTracker.Tests
 {
     public class GitTrackingServiceTests : BaseTest, IAsyncLifetime
     {
+        private BlogPost _initialTrackedItem;
+
         [Fact]
         public async Task Test_Sync_On_New_Repo()
         {
-            GitRepo.Push(Email);
-
             GitConfig.LocalPath = SecondLocalPath;
 
             var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
@@ -28,8 +26,6 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Sync_On_Repo()
         {
-            GitRepo.Push(Email);
-
             GitConfig.LocalPath = SecondLocalPath;
 
             var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
@@ -57,8 +53,6 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Sync_On_Repo_Merge_Conflict()
         {
-            GitRepo.Push(Email);
-
             GitConfig.LocalPath = SecondLocalPath;
 
             var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
@@ -66,18 +60,21 @@ namespace GitTracker.Tests
 
             GitConfig.LocalPath = LocalPath;
 
-            var trackedBlogPost =
-                await GitTrackingService.Add(new BlogPost()
-                {
-                    Name = "My second blog post"
-                });
+            _initialTrackedItem.Body = "My Test Body";
+            _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
 
-            GitTrackingService.Stage(trackedBlogPost);
+            GitTrackingService.Stage(_initialTrackedItem);
             GitRepo.Commit("My Second Commit", Email);
             GitRepo.Push(Email);
 
             GitConfig.LocalPath = SecondLocalPath;
-            await GitTrackingService.Sync(Email, contentTypes);
+
+            _initialTrackedItem.Body = "My Test Body 2";
+            _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
+            GitTrackingService.Stage(_initialTrackedItem);
+            GitRepo.Commit("My Second Commit", Email);
+
+            GitRepo.Pull(Email);
 
             var commits = GitRepo.GetCommits();
             Assert.NotEmpty(commits);
@@ -85,13 +82,14 @@ namespace GitTracker.Tests
 
         public async Task InitializeAsync()
         {
-            var trackedItem = await GitTrackingService.Add(new BlogPost
+            _initialTrackedItem = await GitTrackingService.Add(new BlogPost
             {
                 Name = "Test Blog Post"
             });
 
-            GitTrackingService.Stage(trackedItem);
+            GitTrackingService.Stage(_initialTrackedItem);
             GitRepo.Commit("My First Commit", Email);
+            GitRepo.Push(Email);
         }
 
         public async Task DisposeAsync()

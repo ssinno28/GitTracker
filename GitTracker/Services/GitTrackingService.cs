@@ -28,9 +28,9 @@ namespace GitTracker.Services
             ContentContractResolver contentContractResolver,
             IEnumerable<IValueProvider> valueProviders,
             IFileProvider fileProvider,
-            IPathProvider pathProvider, 
-            IGitRepo gitRepo, 
-            IEnumerable<IUpdateOperation> updateOperations, 
+            IPathProvider pathProvider,
+            IGitRepo gitRepo,
+            IEnumerable<IUpdateOperation> updateOperations,
             IEnumerable<ICreateOperation> createOperations,
             IEnumerable<IDeleteOperation> deleteOperations)
         {
@@ -65,7 +65,7 @@ namespace GitTracker.Services
             }
 
             string currentCommitId = _gitRepo.GetCurrentCommitId();
-            
+
             if (!_gitRepo.Pull(email, userName)) return;
 
             // get new commit id
@@ -105,8 +105,8 @@ namespace GitTracker.Services
             if (createOperation == null) return;
 
             await createOperation.Create(trackedItem);
-        }        
-        
+        }
+
         private async Task PerformDelete(TrackedItem trackedItem)
         {
             var deleteOperation =
@@ -115,8 +115,8 @@ namespace GitTracker.Services
             if (deleteOperation == null) return;
 
             await deleteOperation.Delete(trackedItem);
-        }        
-        
+        }
+
         private async Task PerformUpdate(TrackedItem trackedItem)
         {
             var updateOperation =
@@ -169,9 +169,19 @@ namespace GitTracker.Services
             return trackedItem;
         }
 
+        public async Task<T> Add<T>(T trackedItem) where T : TrackedItem
+        {
+            return (T)await Add((TrackedItem)trackedItem);
+        }
+
+        public async Task<T> CreateDraft<T>(string name, Type contentType, T trackedItem = null) where T : TrackedItem
+        {
+            return (T)await CreateDraft(name, contentType, (TrackedItem)trackedItem);
+        }
+
         public bool Stage(TrackedItem trackedItem)
         {
-            var relativeTrackedItemPath = 
+            var relativeTrackedItemPath =
                 _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
 
             var paths =
@@ -179,6 +189,11 @@ namespace GitTracker.Services
                     .ToArray();
 
             return _gitRepo.Stage(paths);
+        }
+
+        public async Task<T> Update<T>(T trackedItem) where T : TrackedItem
+        {
+            return (T) await Update((TrackedItem) trackedItem);
         }
 
         public async Task<TrackedItem> Update(TrackedItem trackedItem)
@@ -200,6 +215,11 @@ namespace GitTracker.Services
             await PerformUpdate(trackedItem);
 
             return trackedItem;
+        }
+
+        public async Task<T> ChangeName<T>(string newName, T trackedItem) where T : TrackedItem
+        {
+            return (T) await ChangeName(newName, (TrackedItem)trackedItem);
         }
 
         public async Task<TrackedItem> CreateDraft(string name, Type contentType, TrackedItem trackedItem = null)
