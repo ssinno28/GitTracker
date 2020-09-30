@@ -31,7 +31,7 @@ namespace GitTracker.Helpers
             services.AddScoped<IGitRepo, GitRepo>();
             services.AddScoped<IPathProvider, PathProvider>();
             services.AddScoped<IFileProvider, FileProvider>();
-            services.AddScoped<IContentItemService, ContentItemService>();
+            services.AddScoped<IGitTrackingService, GitTrackingService>();
             services.AddScoped<ContentContractResolver>();
 
             var assembly = Assembly.GetAssembly(typeof(MarkdownValueProvider));
@@ -40,21 +40,6 @@ namespace GitTracker.Helpers
                 if (exportedType.ImplementedInterfaces.Contains(typeof(IValueProvider)))
                 {
                     services.AddScoped(typeof(IValueProvider), exportedType);
-                }
-                
-                if (exportedType.ImplementedInterfaces.Contains(typeof(ICreateOperation)))
-                {
-                    services.AddScoped(typeof(ICreateOperation), exportedType);
-                }    
-                
-                if (exportedType.ImplementedInterfaces.Contains(typeof(IUpdateOperation)))
-                {
-                    services.AddScoped(typeof(IUpdateOperation), exportedType);
-                } 
-                
-                if (exportedType.ImplementedInterfaces.Contains(typeof(IDeleteOperation)))
-                {
-                    services.AddScoped(typeof(IDeleteOperation), exportedType);
                 }
             }
 

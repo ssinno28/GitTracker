@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using GitTracker.Interfaces;
@@ -12,7 +13,7 @@ using IValueProvider = GitTracker.Interfaces.IValueProvider;
 
 namespace GitTracker.Services
 {
-    public class ContentItemService : IContentItemService
+    public class GitTrackingService : IGitTrackingService
     {
         private readonly ContentContractResolver _contentContractResolver;
         private readonly IEnumerable<IValueProvider> _valueProviders;
@@ -23,7 +24,7 @@ namespace GitTracker.Services
         private readonly IEnumerable<ICreateOperation> _createOperations;
         private readonly IEnumerable<IDeleteOperation> _deleteOperations;
 
-        public ContentItemService(
+        public GitTrackingService(
             ContentContractResolver contentContractResolver,
             IEnumerable<IValueProvider> valueProviders,
             IFileProvider fileProvider,
@@ -45,6 +46,24 @@ namespace GitTracker.Services
 
         public async Task Sync(string email, IList<Type> contentTypes, string userName = null)
         {
+            // if this is the first pull then no need to check the diff
+            var commits = _gitRepo.GetCommits();
+            if (!commits.Any())
+            {
+                if (!_gitRepo.Pull(email, userName)) return;
+
+                var files = _fileProvider.GetFiles(contentTypes);
+                foreach (var fileContent in files)
+                {
+                    var trackedItem = DeserializeContentItem(fileContent, contentTypes);
+                    await SetNonJsonValues(trackedItem);
+
+                    await PerformCreate(trackedItem);
+                }
+
+                return;
+            }
+
             string currentCommitId = _gitRepo.GetCurrentCommitId();
             
             if (!_gitRepo.Pull(email, userName)) return;
@@ -117,10 +136,10 @@ namespace GitTracker.Services
             return trackedItem;
         }
 
-        public async Task Add(string entity, IList<Type> contentTypes)
+        public async Task<TrackedItem> Add(string entity, IList<Type> contentTypes)
         {
             var contentItem = DeserializeContentItem(entity, contentTypes);
-            await Add(contentItem);
+            return await Add(contentItem);
         }
 
         private async Task SetNonJsonValues(TrackedItem trackedItem)
@@ -137,7 +156,7 @@ namespace GitTracker.Services
             }
         }
 
-        public async Task Add(TrackedItem trackedItem)
+        public async Task<TrackedItem> Add(TrackedItem trackedItem)
         {
             await SetNonJsonValues(trackedItem);
 
@@ -146,9 +165,23 @@ namespace GitTracker.Services
 
             await _fileProvider.UpsertFiles(trackedItem);
             await PerformCreate(trackedItem);
+
+            return trackedItem;
         }
 
-        public async Task<bool> Update(TrackedItem trackedItem)
+        public bool Stage(TrackedItem trackedItem)
+        {
+            var relativeTrackedItemPath = 
+                _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
+
+            var paths =
+                Directory.GetFiles(relativeTrackedItemPath, "*", SearchOption.AllDirectories)
+                    .ToArray();
+
+            return _gitRepo.Stage(paths);
+        }
+
+        public async Task<TrackedItem> Update(TrackedItem trackedItem)
         {
             await SetNonJsonValues(trackedItem);
 
@@ -156,17 +189,17 @@ namespace GitTracker.Services
             await _fileProvider.UpsertFiles(trackedItem);
             await PerformUpdate(trackedItem);
 
-            return true;
+            return trackedItem;
         }
 
-        public async Task<bool> ChangeName(string newName, TrackedItem trackedItem)
+        public async Task<TrackedItem> ChangeName(string newName, TrackedItem trackedItem)
         {
             trackedItem.PreviousPaths.Add(_pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem));
             await _fileProvider.MoveFile(newName, trackedItem);
             await _fileProvider.UpsertFiles(trackedItem);
             await PerformUpdate(trackedItem);
 
-            return true;
+            return trackedItem;
         }
 
         public async Task<TrackedItem> CreateDraft(string name, Type contentType, TrackedItem trackedItem = null)

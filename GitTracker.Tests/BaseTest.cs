@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using GitTracker.Helpers;
 using GitTracker.Interfaces;
 using GitTracker.Models;
@@ -8,6 +9,7 @@ using GitTracker.Tests.Helpers;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Moq;
 
 namespace GitTracker.Tests
 {
@@ -18,10 +20,15 @@ namespace GitTracker.Tests
         protected readonly string SecondLocalPath;
         protected readonly string RemotePath;
         protected readonly IGitRepo GitRepo;
+        protected readonly IGitTrackingService GitTrackingService;
         protected readonly GitConfig GitConfig;
 
         protected string Email = "john.doe@gmail.com";
-        protected readonly string FirstCommitId;
+        protected string FirstCommitId;
+
+        protected Mock<IUpdateOperation> UpdateOperationMock;
+        protected Mock<IDeleteOperation> DeleteOperationMock;
+        protected Mock<ICreateOperation> CreateOperationMock;
 
         public BaseTest()
         {
@@ -32,10 +39,27 @@ namespace GitTracker.Tests
             SecondLocalPath = $"{settingsPath}\\local-2-repo";
             RemotePath = $"{settingsPath}\\remote-repo";
 
-            ServiceProvider = new ServiceCollection()
+            var serviceCollection = new ServiceCollection()
                 .AddLogging(x => x.AddConsole())
-                .AddGitTracking(LocalPath, "test", RemotePath, string.Empty)
-                .BuildServiceProvider();
+                .AddGitTracking(LocalPath, "test", RemotePath, string.Empty);
+
+            UpdateOperationMock = new Mock<IUpdateOperation>();
+            UpdateOperationMock.Setup(x => x.IsMatch(It.IsAny<Type>())).Returns(true);
+            UpdateOperationMock.Setup(x => x.Update(It.IsAny<TrackedItem>())).Returns(Task.CompletedTask);
+            
+            CreateOperationMock = new Mock<ICreateOperation>();
+            CreateOperationMock.Setup(x => x.IsMatch(It.IsAny<Type>())).Returns(true);
+            CreateOperationMock.Setup(x => x.Create(It.IsAny<TrackedItem>())).Returns(Task.CompletedTask);
+            
+            DeleteOperationMock = new Mock<IDeleteOperation>();
+            DeleteOperationMock.Setup(x => x.IsMatch(It.IsAny<Type>())).Returns(true);
+            DeleteOperationMock.Setup(x => x.Delete(It.IsAny<TrackedItem>())).Returns(Task.CompletedTask);
+
+            serviceCollection.Add(new ServiceDescriptor(typeof(IUpdateOperation), UpdateOperationMock.Object));
+            serviceCollection.Add(new ServiceDescriptor(typeof(IDeleteOperation), DeleteOperationMock.Object));
+            serviceCollection.Add(new ServiceDescriptor(typeof(ICreateOperation), CreateOperationMock.Object));
+
+            ServiceProvider = serviceCollection.BuildServiceProvider();
 
             if (!Directory.Exists(RemotePath) || !Repository.IsValid(RemotePath))
             {
@@ -53,13 +77,8 @@ namespace GitTracker.Tests
             }
 
             GitRepo = ServiceProvider.GetService<IGitRepo>();
+            GitTrackingService = ServiceProvider.GetService<IGitTrackingService>();
             GitConfig = ServiceProvider.GetService<GitConfig>();
-            
-            string filePath = Path.Combine(LocalPath, "fileToCommit.txt");
-            File.WriteAllText(filePath, "Testing service");
-
-            GitRepo.Stage(filePath);
-            FirstCommitId = GitRepo.Commit("first commit", Email);
         }
 
         public void Dispose()

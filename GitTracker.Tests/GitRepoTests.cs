@@ -9,6 +9,16 @@ namespace GitTracker.Tests
 {
     public class GitRepoTests : BaseTest
     {
+        public GitRepoTests()
+        {
+            string filePath = Path.Combine(LocalPath, "fileToCommit.txt");
+            File.WriteAllText(filePath, "Testing service");
+
+            GitRepo.Stage(filePath);
+            FirstCommitId = GitRepo.Commit("first commit", Email);
+        }
+
+
         [Fact]
         public void Test_Get_Diff_From_Head()
         {
