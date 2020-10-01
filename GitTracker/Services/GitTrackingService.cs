@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using GitTracker.Helpers;
 using GitTracker.Interfaces;
 using GitTracker.Models;
 using GitTracker.Serializer;
@@ -176,6 +177,17 @@ namespace GitTracker.Services
                     var fileContents =
                         _gitRepo.GetDiff3Files(conflict.Ours.Path, conflict.Theirs.Path, conflict.Ancestor?.Path);
 
+                    string fileName = Path.GetFileNameWithoutExtension(conflict.Ours.Path);
+
+                    var propertyInfo =
+                        trackedItemConflict.Ours.GetType()
+                            .GetProperties()
+                            .First(x => x.Name.ToSentenceCase().MakeUrlFriendly().Equals(fileName));
+
+                    trackedItemConflict.ChangedProperties.Add(propertyInfo);
+                    propertyInfo.SetValue(trackedItemConflict.Ours, fileContents.OurFile);
+                    propertyInfo.SetValue(trackedItemConflict.Theirs, fileContents.TheirFile);
+
                     var valueProviderConflict =
                         new ValueProviderConflict
                         {
@@ -187,6 +199,7 @@ namespace GitTracker.Services
                     {
                         valueProviderConflict.BasePath = Path.Combine(_gitConfig.LocalPath, $"{conflict.Ancestor.Path}.BASE");
                         File.WriteAllText(valueProviderConflict.BasePath, fileContents.BaseFile);
+                        propertyInfo.SetValue(trackedItemConflict.Ancestor, fileContents.BaseFile);
                     }
 
                     File.WriteAllText(valueProviderConflict.LocalPath, fileContents.OurFile);

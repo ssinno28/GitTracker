@@ -1,7 +1,5 @@
 # GitTracker
 
-![.github/workflows/main.yml](https://github.com/ssinno28/AchillesCR/workflows/.github/workflows/main.yml/badge.svg)
-
 **NOT READY FOR PRODUCTION USE**
 
 The way it works is it creates a folder for each content type and then under that a folder for each content item:

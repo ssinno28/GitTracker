@@ -177,7 +177,7 @@ namespace GitTracker.Tests
 
             var conflicts = await GitTrackingService.GetTrackedItemConflicts(contentTypes);
             Assert.Equal(1, conflicts.Count);
-            Assert.Equal(1, conflicts.First().ChangedProperties.Count);
+            Assert.Equal(2, conflicts.First().ChangedProperties.Count);
             Assert.Equal(1, conflicts.First().ValueProviderConflicts.Count);
         }
 
