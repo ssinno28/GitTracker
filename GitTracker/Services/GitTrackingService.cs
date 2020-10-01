@@ -95,9 +95,8 @@ namespace GitTracker.Services
                         await PerformCreate(addedItem);
                         break;
                     case ChangeKind.Deleted:
-                        _gitRepo.CheckoutPaths(currentCommitId, gitDiff.Path);
-                        var deletedItem = await GetTrackedItem(gitDiff.Path, contentTypes);
-                        _gitRepo.Reset(ResetMode.Hard);
+                        string fileContents = _gitRepo.GetFileFromCommit(currentCommitId, gitDiff.Path);
+                        var deletedItem = await DeserializeContentItem(fileContents, contentTypes);
 
                         await PerformDelete(deletedItem);
                         break;

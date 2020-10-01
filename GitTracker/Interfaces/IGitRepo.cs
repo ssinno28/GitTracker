@@ -28,5 +28,6 @@ namespace GitTracker.Interfaces
         void CheckoutPaths(string commitId, params string[] filePaths);
         IList<Conflict> GetMergeConflicts();
         GitMergeCommits GetDiff3Files(string localPath, string remotePath, string basePath = null);
+        string GetFileFromCommit(string commitId, string path);
     }
 }

@@ -113,6 +113,24 @@ namespace GitTracker.Repositories
             return true;
         }
 
+        public string GetFileFromCommit(string commitId, string path)
+        {
+            string fileContents = null;
+            using (var repo = LocalRepo)
+            {
+                var ourCommit =
+                    repo.Commits.First(x => x.Id.ToString().Equals(commitId));
+
+                var ourBlob = ourCommit[path].Target as Blob;
+                using (var content = new StreamReader(ourBlob.GetContentStream(), Encoding.UTF8))
+                {
+                    fileContents = content.ReadToEnd();
+                }
+            }
+
+            return fileContents;
+        }
+
         public GitMergeCommits GetDiff3Files(string localPath, string remotePath, string basePath = null)
         {
             var gitMergeCommits = new GitMergeCommits();
