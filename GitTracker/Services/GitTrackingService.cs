@@ -34,7 +34,7 @@ namespace GitTracker.Services
             IGitRepo gitRepo,
             IEnumerable<IUpdateOperation> updateOperations,
             IEnumerable<ICreateOperation> createOperations,
-            IEnumerable<IDeleteOperation> deleteOperations, 
+            IEnumerable<IDeleteOperation> deleteOperations,
             GitConfig gitConfig)
         {
             _contentContractResolver = contentContractResolver;
@@ -46,6 +46,15 @@ namespace GitTracker.Services
             _createOperations = createOperations;
             _deleteOperations = deleteOperations;
             _gitConfig = gitConfig;
+        }
+
+        public async Task<bool> Publish(string email, IList<Type> contentTypes,
+            CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)
+        {
+            var result = await Sync(email, contentTypes, strategy, userName);
+            if (!result) return false;
+
+            return _gitRepo.Push(email, userName);
         }
 
         public async Task<bool> Sync(string email, IList<Type> contentTypes, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)

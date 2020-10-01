@@ -21,5 +21,7 @@ namespace GitTracker.Interfaces
         Task<T> CreateDraft<T>(string name, Type contentType, T trackedItem = null) where T : TrackedItem;
         bool Stage(TrackedItem trackedItem);
         Task<IList<TrackedItemConflict>> GetTrackedItemConflicts(IList<Type> contentTypes);
+        Task<bool> Publish(string email, IList<Type> contentTypes,
+            CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null);
     }
 }
