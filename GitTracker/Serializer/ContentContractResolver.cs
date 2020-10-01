@@ -1,20 +1,22 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using GitTracker.Attributes;
 using GitTracker.Converters;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using IValueProvider = GitTracker.Interfaces.IValueProvider;
 
 namespace GitTracker.Serializer
 {
     public class ContentContractResolver : DefaultContractResolver
     {
         private readonly IEnumerable<ContentJsonConverter> _jsonConverters;
+        private readonly IEnumerable<IValueProvider> _valueProviders;
 
-        public ContentContractResolver(IEnumerable<ContentJsonConverter> jsonConverters)
+        public ContentContractResolver(IEnumerable<ContentJsonConverter> jsonConverters, IEnumerable<IValueProvider> valueProviders)
         {
             _jsonConverters = jsonConverters;
+            _valueProviders = valueProviders;
         }
 
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
@@ -22,10 +24,10 @@ namespace GitTracker.Serializer
             JsonProperty property = base.CreateProperty(member, memberSerialization);
 
             var propertyInfo = member as PropertyInfo;
-            bool isMarkdownProperty = propertyInfo?.GetCustomAttribute<MarkdownAttribute>() != null;
+            var valueProvider = _valueProviders.FirstOrDefault(x => x.IsMatch(propertyInfo));
             property.ShouldSerialize = instance =>
             {
-                if (isMarkdownProperty)
+                if (valueProvider != null)
                 {
                     return false;
                 }

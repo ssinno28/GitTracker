@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GitTracker.Attributes;
 using GitTracker.Models;
 
 namespace GitTracker.Tests.Models
@@ -9,6 +10,7 @@ namespace GitTracker.Tests.Models
         public DateTime PublishedDate { get; set; }
         public DateTimeOffset PublishedDateOffset { get; set; }
         public bool IsPublished { get; set; }
+        [Markdown]
         public string Body { get; set; }
         public string SeoDescription { get; set; }
         public string SeoTitle { get; set; }

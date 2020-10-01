@@ -2,15 +2,16 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using GitTracker.Models;
+using LibGit2Sharp;
 
 namespace GitTracker.Interfaces
 {
     public interface IGitTrackingService
     {
-        Task Sync(string email, IList<Type> contentTypes, string userName = null);
-        Task<TrackedItem> Add(string entity, IList<Type> contentTypes);
-        Task<TrackedItem> Add(TrackedItem trackedItem);
-        Task<T> Add<T>(T trackedItem) where T : TrackedItem;
+        Task<bool> Sync(string email, IList<Type> contentTypes, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null);
+        Task<TrackedItem> Create(string entity, IList<Type> contentTypes);
+        Task<TrackedItem> Create(TrackedItem trackedItem);
+        Task<T> Create<T>(T trackedItem) where T : TrackedItem;
         Task Delete(TrackedItem trackedItem);
         Task<T> Update<T>(T trackedItem) where T : TrackedItem;
         Task<TrackedItem> Update(TrackedItem trackedItem);
@@ -19,5 +20,6 @@ namespace GitTracker.Interfaces
         Task<TrackedItem> CreateDraft(string name, Type contentType, TrackedItem trackedItem = null);
         Task<T> CreateDraft<T>(string name, Type contentType, T trackedItem = null) where T : TrackedItem;
         bool Stage(TrackedItem trackedItem);
+        Task<IList<TrackedItemConflict>> GetTrackedItemConflicts(IList<Type> contentTypes);
     }
 }

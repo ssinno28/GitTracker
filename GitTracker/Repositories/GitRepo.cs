@@ -31,7 +31,7 @@ namespace GitTracker.Repositories
         private Repository LocalRepo => new Repository(_gitConfig.LocalPath);
         private Repository RemoteRepo => new Repository(_gitConfig.RemotePath);
 
-        public bool Pull(string email, string username = null)
+        public bool Pull(string email, CheckoutFileConflictStrategy strategy, string username = null)
         {
             if (string.IsNullOrEmpty(_gitConfig.Token))
             {
@@ -70,7 +70,8 @@ namespace GitTracker.Repositories
                     },
                     MergeOptions = new MergeOptions
                     {
-                        FastForwardStrategy = FastForwardStrategy.FastForwardOnly
+                        FastForwardStrategy = FastForwardStrategy.Default,
+                        FileConflictStrategy = strategy
                     }
                 };
 
@@ -82,14 +83,115 @@ namespace GitTracker.Repositories
                 {
                     // Pull
                     Commands.Pull(repo, signature, options);
+
+                    // if merge strategy is theirs or ours then we stage and commit for them
+                    if (repo.Index.Conflicts.Any() && (strategy == CheckoutFileConflictStrategy.Theirs || strategy == CheckoutFileConflictStrategy.Ours))
+                    {
+                        string commitMsg = GetMergeCommitMessage(repo.Index.Conflicts);
+                        foreach (var indexConflict in repo.Index.Conflicts)
+                        {
+                            Commands.Stage(repo,
+                                strategy == CheckoutFileConflictStrategy.Theirs
+                                    ? indexConflict.Theirs.Path
+                                    : indexConflict.Ours.Path);
+                        }
+
+                        Commit(commitMsg, email);
+                    }
+                    else if (repo.Index.Conflicts.Any())
+                    {
+                        return false;
+                    }
                 }
-                catch (NonFastForwardException ex)
+                catch (Exception ex)
                 {
-                    var conflicts = repo.Index.Conflicts;
+                    _logger.LogError(ex, $"Could not pull from repo ${_gitConfig.RemotePath}");
+                    return false;
                 }
             }
 
             return true;
+        }
+
+        public GitMergeCommits GetDiff3Files(string localPath, string remotePath, string basePath = null)
+        {
+            var gitMergeCommits = new GitMergeCommits();
+
+            using (var repo = LocalRepo)
+            {
+                var ourCommitId = GetCurrentCommitId();
+                var theirCommitId = repo.Branches[$"origin/{GetCurrentBranch()}"].Tip.Id.ToString();
+                var baseCommitId = GetMergeBase(ourCommitId, theirCommitId);
+
+                var ourCommit =
+                    repo.Commits.First(x => x.Id.ToString().Equals(ourCommitId));
+
+                var ourBlob = ourCommit[localPath].Target as Blob;
+                using (var content = new StreamReader(ourBlob.GetContentStream(), Encoding.UTF8))
+                {
+                    gitMergeCommits.OurFile = content.ReadToEnd();
+                }
+
+                var theirCommit = repo.Branches[$"origin/{GetCurrentBranch()}"].Tip;
+                var theirBlob = theirCommit[remotePath].Target as Blob;
+                using (var content = new StreamReader(theirBlob.GetContentStream(), Encoding.UTF8))
+                {
+                    gitMergeCommits.TheirFile = content.ReadToEnd();
+                }
+
+                if (!string.IsNullOrEmpty(basePath))
+                {
+                    var baseCommit =
+                        repo.Commits.First(x => x.Id.ToString().Equals(baseCommitId));
+                    var baseBlob = baseCommit[basePath].Target as Blob;
+                    using (var content = new StreamReader(baseBlob.GetContentStream(), Encoding.UTF8))
+                    {
+                        gitMergeCommits.BaseFile = content.ReadToEnd();
+                    }
+                }
+            }
+
+            return gitMergeCommits;
+        }
+
+        private string GetMergeBase(string a, string b)
+        {
+            using (var repo = LocalRepo)
+            {
+                var aCommit = repo.Lookup<Commit>(a);
+                var bCommit = repo.Lookup<Commit>(b);
+                if (aCommit == null || bCommit == null)
+                    return null;
+                var baseCommit = repo.ObjectDatabase.FindMergeBase(aCommit, bCommit);
+                return baseCommit != null ? baseCommit.Sha : null;
+            }
+        }
+
+        public IList<Conflict> GetMergeConflicts()
+        {
+            IList<Conflict> conflicts;
+            using (var repo = LocalRepo)
+            {
+                conflicts = repo.Index.Conflicts.ToList();
+            }
+
+            return conflicts;
+        }
+
+        private string GetMergeCommitMessage(ConflictCollection conflicts)
+        {
+            var stringBuilder = new StringBuilder();
+
+            stringBuilder.AppendLine($"Merge branch {GetCurrentBranch()} of {_gitConfig.RemotePath}");
+            stringBuilder.AppendLine(string.Empty);
+            stringBuilder.AppendLine("Conflicts: ");
+
+            foreach (var conflict in conflicts)
+            {
+                stringBuilder.AppendLine($"        {conflict.Theirs.Path}");
+            }
+
+            return stringBuilder.ToString();
         }
 
         public bool Push(string email, string username = null)
@@ -382,9 +484,17 @@ namespace GitTracker.Repositories
         {
             using (var repo = LocalRepo)
             {
-                repo.CheckoutPaths(commitId, filePaths);
+                try
+                {
+                    repo.CheckoutPaths(commitId, filePaths);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Could not checkout paths ${string.Join(",", filePaths)} for commit {commitId}");
+                }
             }
         }
+
 
         public IList<GitDiff> GetDiff(IList<string> paths, string id, string endId = null)
         {

@@ -22,6 +22,7 @@ namespace GitTracker.Tests
         protected readonly IGitRepo GitRepo;
         protected readonly IGitTrackingService GitTrackingService;
         protected readonly GitConfig GitConfig;
+        protected readonly IPathProvider PathProvider;
 
         protected string Email = "john.doe@gmail.com";
         protected string FirstCommitId;
@@ -79,6 +80,7 @@ namespace GitTracker.Tests
             GitRepo = ServiceProvider.GetService<IGitRepo>();
             GitTrackingService = ServiceProvider.GetService<IGitTrackingService>();
             GitConfig = ServiceProvider.GetService<GitConfig>();
+            PathProvider = ServiceProvider.GetService<IPathProvider>();
         }
 
         public void Dispose()

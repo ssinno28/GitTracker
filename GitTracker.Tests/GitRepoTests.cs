@@ -45,7 +45,7 @@ namespace GitTracker.Tests
 
             GitConfig.LocalPath = SecondLocalPath;
 
-            bool result = GitRepo.Pull(Email);
+            bool result = GitRepo.Pull(Email, CheckoutFileConflictStrategy.Normal);
             Assert.True(result);
 
             var commits = GitRepo.GetCommits();

@@ -12,7 +12,7 @@ namespace GitTracker.Interfaces
         string Commit(string message, string email, string userName = null);
         bool Stage(params string[] filePaths);
         bool Unstage(params string[] filePaths);
-        bool Pull(string email, string username = null);
+        bool Pull(string email, CheckoutFileConflictStrategy strategy, string username = null);
         bool Push(string email, string username = null);
         bool Reset(ResetMode resetMode);
         List<GitCommit> GetCommits(int page = 1, int take = 10, IList<string> paths = null);
@@ -26,5 +26,7 @@ namespace GitTracker.Interfaces
         void CreateBranch(string branch);
         bool IsGithubPushAllowed(string payload, string signatureWithPrefix);
         void CheckoutPaths(string commitId, params string[] filePaths);
+        IList<Conflict> GetMergeConflicts();
+        GitMergeCommits GetDiff3Files(string localPath, string remotePath, string basePath = null);
     }
 }
