@@ -46,10 +46,7 @@ namespace GitTracker.Tests
 
             var contentTypes = new List<Type> { typeof(BlogPost), typeof(Models.Tag), typeof(Category) };
             var serviceCollection = new ServiceCollection()
-                .AddLogging(x => x.AddConsole(options =>
-                {
-                    options.LogToStandardErrorThreshold = Microsoft.Extensions.Logging.LogLevel.Debug;
-                }))
+                .AddLogging(x => x.AddConsole())
                 .AddGitTracking(LocalPath, "test", RemotePath, string.Empty, contentTypes);
 
             UpdateOperationMock = new Mock<IUpdateOperation>();
