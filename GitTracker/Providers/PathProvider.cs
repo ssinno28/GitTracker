@@ -20,8 +20,8 @@ namespace GitTracker.Providers
             string contentTypeName = contentType.Name;
             var contentItemPath =
                           contentItem != null
-                              ? $"{_gitConfig.LocalPath}\\{contentTypeName}\\{contentItem.Name.MakeUrlFriendly()}"
-                              : $"{_gitConfig.LocalPath}\\{contentTypeName}\\{contentType.Name}-temp";
+                              ? Path.Combine(_gitConfig.LocalPath, contentTypeName, contentItem.Name.MakeUrlFriendly())
+                              : Path.Combine(_gitConfig.LocalPath, contentTypeName, $"{contentType.Name}-temp");
 
             if (!Directory.Exists(contentItemPath))
             {
