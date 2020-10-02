@@ -411,6 +411,7 @@ namespace GitTracker.Repositories
 
                 foreach (var item in repo.RetrieveStatus(statusOptions))
                 {
+                    _logger.LogDebug($"Getting unstaged item {item}");
                     unstagedFiles.Add(item.FilePath);
                 }
             }
@@ -434,6 +435,7 @@ namespace GitTracker.Repositories
 
                     foreach (var item in repo.RetrieveStatus(statusOptions))
                     {
+                        _logger.LogDebug($"Getting staged item {item}");
                         stagedFiles.Add(item.FilePath);
                     }
                 }

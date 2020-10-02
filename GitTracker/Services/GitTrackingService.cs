@@ -110,6 +110,7 @@ namespace GitTracker.Services
             return true;
         }
 
+
         public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(string currentCommitId = null, string newCommitId = null)
         {
             return await GetTrackedItemDiffs(new List<string>(), currentCommitId, newCommitId);
@@ -376,7 +377,7 @@ namespace GitTracker.Services
                 _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
 
             var unstagedItems =
-                _gitRepo.GetUnstagedItems();
+                _gitRepo.GetUnstagedItems().Where(x => x.Contains(relativeTrackedItemPath));
 
             return _gitRepo.Stage(unstagedItems.ToArray());
         }        
