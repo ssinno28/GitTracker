@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using GitTracker.Models;
 using LibGit2Sharp;
 using Xunit;
 
 namespace GitTracker.Tests
 {
+    [Collection("Sequential")]
     public class GitRepoTests : BaseTest
     {
         public GitRepoTests()

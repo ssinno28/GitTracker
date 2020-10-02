@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using GitTracker.Interfaces;
@@ -17,14 +18,16 @@ namespace GitTracker.Helpers
             string localPath,
             string token,
             string remotePath,
-            string webhookSecret)
+            string webhookSecret,
+            IList<Type> trackedTypes)
         {
             var gitConfig = new GitConfig
             {
                 Token = token,
                 RemotePath = remotePath,
                 LocalPath = localPath,
-                WebhookSecret = webhookSecret
+                WebhookSecret = webhookSecret,
+                TrackedTypes = trackedTypes
             };
 
             services.AddSingleton(gitConfig);

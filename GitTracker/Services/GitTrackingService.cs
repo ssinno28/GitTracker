@@ -49,16 +49,16 @@ namespace GitTracker.Services
             _gitConfig = gitConfig;
         }
 
-        public async Task<bool> Publish(string email, IList<Type> contentTypes,
+        public async Task<bool> Publish(string email,
             CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)
         {
-            var result = await Sync(email, contentTypes, strategy, userName);
+            var result = await Sync(email, strategy, userName);
             if (!result) return false;
 
             return _gitRepo.Push(email, userName);
         }
 
-        public async Task<bool> Sync(string email, IList<Type> contentTypes, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)
+        public async Task<bool> Sync(string email, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)
         {
             // if this is the first pull then no need to check the diff
             var commits = _gitRepo.GetCommits();
@@ -66,10 +66,10 @@ namespace GitTracker.Services
             {
                 if (!_gitRepo.Pull(email, strategy, userName)) return false;
 
-                var files = _fileProvider.GetFiles(contentTypes);
+                var files = _fileProvider.GetFiles(_gitConfig.TrackedTypes);
                 foreach (var fileContent in files)
                 {
-                    var trackedItem = await DeserializeContentItem(fileContent, contentTypes);
+                    var trackedItem = await DeserializeContentItem(fileContent);
                     await PerformCreate(trackedItem);
                 }
 
@@ -91,17 +91,17 @@ namespace GitTracker.Services
                 switch (gitDiff.ChangeKind)
                 {
                     case ChangeKind.Added:
-                        var addedItem = await GetTrackedItem(gitDiff.Path, contentTypes);
+                        var addedItem = await GetTrackedItem(gitDiff.Path);
                         await PerformCreate(addedItem);
                         break;
                     case ChangeKind.Deleted:
                         string fileContents = _gitRepo.GetFileFromCommit(currentCommitId, gitDiff.Path);
-                        var deletedItem = await DeserializeContentItem(fileContents, contentTypes);
+                        var deletedItem = await DeserializeContentItem(fileContents);
 
                         await PerformDelete(deletedItem);
                         break;
                     case ChangeKind.Modified:
-                        var modifiedItem = await GetTrackedItem(gitDiff.Path, contentTypes);
+                        var modifiedItem = await GetTrackedItem(gitDiff.Path);
                         await PerformUpdate(modifiedItem);
                         break;
                 }
@@ -110,7 +110,25 @@ namespace GitTracker.Services
             return true;
         }
 
-        public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(IList<string> paths, IList<Type> contentTypes, string currentCommitId = null, string newCommitId = null)
+        public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(string currentCommitId = null, string newCommitId = null)
+        {
+            return await GetTrackedItemDiffs(new List<string>(), currentCommitId, newCommitId);
+        }        
+        
+        public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(Type trackedType, string currentCommitId = null, string newCommitId = null)
+        {
+            string path = _pathProvider.GetRelativeTrackedItemPath(trackedType);
+            return await GetTrackedItemDiffs(new List<string>() {path}, currentCommitId, newCommitId);
+        }
+
+        public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(TrackedItem trackedItem,
+            string currentCommitId = null, string newCommitId = null)
+        {
+            string path = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
+            return await GetTrackedItemDiffs(new List<string>() { path }, currentCommitId, newCommitId);
+        }
+
+        private async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(IList<string> paths, string currentCommitId = null, string newCommitId = null)
         {
             IList<TrackedItemDiff> trackedItemDiffs = new List<TrackedItemDiff>();
 
@@ -137,8 +155,8 @@ namespace GitTracker.Services
 
                 foreach (var gitDiff in diffGrouping.Where(x => x.Path.EndsWith(".json")))
                 {
-                    trackedItemDiff.Initial = await DeserializeContentItem(gitDiff.InitialFileContent, contentTypes);
-                    trackedItemDiff.Final = await DeserializeContentItem(gitDiff.FinalFileContent, contentTypes);
+                    trackedItemDiff.Initial = await DeserializeContentItem(gitDiff.InitialFileContent);
+                    trackedItemDiff.Final = await DeserializeContentItem(gitDiff.FinalFileContent);
 
                     trackedItemDiff.TrackedItemGitDiff = gitDiff;
                 }
@@ -202,7 +220,7 @@ namespace GitTracker.Services
                 .First(x => x.Name.ToSentenceCase().MakeUrlFriendly().Equals(propertyName));
         }
 
-        public async Task<IList<TrackedItemConflict>> GetTrackedItemConflicts(IList<Type> contentTypes)
+        public async Task<IList<TrackedItemConflict>> GetTrackedItemConflicts()
         {
             var trackedItemConflicts = new List<TrackedItemConflict>();
             var mergeConflicts = _gitRepo.GetMergeConflicts();
@@ -222,11 +240,11 @@ namespace GitTracker.Services
 
                     if (!string.IsNullOrEmpty(fileContents.BaseFile))
                     {
-                        trackedItemConflict.Ancestor = await DeserializeContentItem(fileContents.BaseFile, contentTypes);
+                        trackedItemConflict.Ancestor = await DeserializeContentItem(fileContents.BaseFile);
                     }
 
-                    trackedItemConflict.Ours = await DeserializeContentItem(fileContents.OurFile, contentTypes);
-                    trackedItemConflict.Theirs = await DeserializeContentItem(fileContents.TheirFile, contentTypes);
+                    trackedItemConflict.Ours = await DeserializeContentItem(fileContents.OurFile);
+                    trackedItemConflict.Theirs = await DeserializeContentItem(fileContents.TheirFile);
 
                     trackedItemConflict.ChangedProperties =
                         GetChangedProperties(trackedItemConflict.Ours, trackedItemConflict.Theirs);
@@ -301,17 +319,17 @@ namespace GitTracker.Services
             await updateOperation.Update(trackedItem);
         }
 
-        private async Task<TrackedItem> GetTrackedItem(string path, IList<Type> contentTypes)
+        private async Task<TrackedItem> GetTrackedItem(string path)
         {
             string fileContent = _fileProvider.GetFile(path);
-            var trackedItem = await DeserializeContentItem(fileContent, contentTypes);
+            var trackedItem = await DeserializeContentItem(fileContent);
 
             return trackedItem;
         }
 
-        public async Task<TrackedItem> Create(string entity, IList<Type> contentTypes)
+        public async Task<TrackedItem> Create(string entity)
         {
-            var contentItem = await DeserializeContentItem(entity, contentTypes);
+            var contentItem = await DeserializeContentItem(entity);
             return await Create(contentItem);
         }
 
@@ -428,20 +446,20 @@ namespace GitTracker.Services
             await PerformDelete(trackedItem);
         }
 
-        private Type GetContentType(string entity, IList<Type> contentTypes)
+        private Type GetContentType(string entity)
         {
             string typeDefinition = JObject.Parse(entity).GetValue("TypeDefinition").Value<string>();
-            return contentTypes.First(x => x.Name.Equals(typeDefinition));
+            return _gitConfig.TrackedTypes.First(x => x.Name.Equals(typeDefinition));
         }
 
-        private async Task<TrackedItem> DeserializeContentItem(string document, IList<Type> contentTypes)
+        private async Task<TrackedItem> DeserializeContentItem(string document)
         {
             if (string.IsNullOrEmpty(document))
             {
                 return null;
             }
 
-            var contentType = GetContentType(document, contentTypes);
+            var contentType = GetContentType(document);
             var serializerSettings = new JsonSerializerSettings
             {
                 ContractResolver = _contentContractResolver

@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using GitTracker.Models;
 using GitTracker.Tests.Models;
 using LibGit2Sharp;
 using Xunit;
-using Tag = GitTracker.Tests.Models.Tag;
 
 namespace GitTracker.Tests
 {
+    [Collection("Sequential")]
     public class GitTrackingServiceTests : BaseTest, IAsyncLifetime
     {
         private BlogPost _initialTrackedItem;
@@ -20,8 +18,7 @@ namespace GitTracker.Tests
         {
             GitConfig.LocalPath = SecondLocalPath;
 
-            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
-            await GitTrackingService.Sync(Email, contentTypes);
+            await GitTrackingService.Sync(Email);
 
             var commits = GitRepo.GetCommits();
             Assert.NotEmpty(commits);
@@ -32,8 +29,7 @@ namespace GitTracker.Tests
         {
             GitConfig.LocalPath = SecondLocalPath;
 
-            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
-            await GitTrackingService.Sync(Email, contentTypes);
+            await GitTrackingService.Sync(Email);
 
             GitConfig.LocalPath = LocalPath;
 
@@ -48,7 +44,7 @@ namespace GitTracker.Tests
             GitRepo.Push(Email);
 
             GitConfig.LocalPath = SecondLocalPath;
-            await GitTrackingService.Sync(Email, contentTypes);
+            await GitTrackingService.Sync(Email);
 
             var commits = GitRepo.GetCommits();
             Assert.NotEmpty(commits);
@@ -59,8 +55,7 @@ namespace GitTracker.Tests
         {
             GitConfig.LocalPath = SecondLocalPath;
 
-            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
-            await GitTrackingService.Sync(Email, contentTypes);
+            await GitTrackingService.Sync(Email);
 
             GitConfig.LocalPath = LocalPath;
 
@@ -78,7 +73,7 @@ namespace GitTracker.Tests
             GitTrackingService.Stage(_initialTrackedItem);
             GitRepo.Commit("Repo 2 Second Commit", Email);
 
-            bool result = await GitTrackingService.Sync(Email, contentTypes, CheckoutFileConflictStrategy.Theirs);
+            bool result = await GitTrackingService.Sync(Email, CheckoutFileConflictStrategy.Theirs);
             Assert.True(result);
         }        
         
@@ -87,8 +82,7 @@ namespace GitTracker.Tests
         {
             GitConfig.LocalPath = SecondLocalPath;
 
-            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
-            await GitTrackingService.Sync(Email, contentTypes);
+            await GitTrackingService.Sync(Email);
 
             GitConfig.LocalPath = LocalPath;
 
@@ -106,7 +100,7 @@ namespace GitTracker.Tests
             GitTrackingService.Stage(_initialTrackedItem);
             GitRepo.Commit("Repo 2 Second Commit", Email);
 
-            bool result = await GitTrackingService.Sync(Email, contentTypes, CheckoutFileConflictStrategy.Ours);
+            bool result = await GitTrackingService.Sync(Email, CheckoutFileConflictStrategy.Ours);
             Assert.True(result);
         }       
         
@@ -115,8 +109,7 @@ namespace GitTracker.Tests
         {
             GitConfig.LocalPath = SecondLocalPath;
 
-            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
-            await GitTrackingService.Sync(Email, contentTypes);
+            await GitTrackingService.Sync(Email);
 
             GitConfig.LocalPath = LocalPath;
 
@@ -134,10 +127,10 @@ namespace GitTracker.Tests
             GitTrackingService.Stage(_initialTrackedItem);
             GitRepo.Commit("Repo 2 Second Commit", Email);
 
-            bool result = await GitTrackingService.Sync(Email, contentTypes);
+            bool result = await GitTrackingService.Sync(Email);
             Assert.False(result);
 
-            var conflicts = await GitTrackingService.GetTrackedItemConflicts(contentTypes);
+            var conflicts = await GitTrackingService.GetTrackedItemConflicts();
             Assert.Equal(1, conflicts.Count);
             Assert.Equal(2, conflicts.First().ChangedProperties.Count);
         }        
@@ -147,8 +140,7 @@ namespace GitTracker.Tests
         {
             GitConfig.LocalPath = SecondLocalPath;
 
-            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
-            await GitTrackingService.Sync(Email, contentTypes);
+            await GitTrackingService.Sync(Email);
 
             GitConfig.LocalPath = LocalPath;
 
@@ -173,10 +165,10 @@ namespace GitTracker.Tests
             GitTrackingService.Stage(_initialTrackedItem);
             GitRepo.Commit("Repo 2 Second Commit", Email);
 
-            bool result = await GitTrackingService.Sync(Email, contentTypes);
+            bool result = await GitTrackingService.Sync(Email);
             Assert.False(result);
 
-            var conflicts = await GitTrackingService.GetTrackedItemConflicts(contentTypes);
+            var conflicts = await GitTrackingService.GetTrackedItemConflicts();
             Assert.Equal(1, conflicts.Count);
             Assert.Equal(2, conflicts.First().ChangedProperties.Count);
             Assert.Equal(1, conflicts.First().ValueProviderConflicts.Count);
@@ -185,8 +177,6 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Get_Diff_FromHead()
         {
-            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
-
             _initialTrackedItem.SeoDescription = "My New Seo Description";
 
             string contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
@@ -196,7 +186,7 @@ namespace GitTracker.Tests
 
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
 
-            var diff = await GitTrackingService.GetTrackedItemDiffs(new List<string>(), contentTypes);
+            var diff = await GitTrackingService.GetTrackedItemDiffs();
             Assert.NotEmpty(diff);
             Assert.NotEmpty(diff.First().ValueProviderDiffs);
         }        
@@ -204,9 +194,7 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Get_Diff_For_Commit()
         {
-            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
-
-            var diff = await GitTrackingService.GetTrackedItemDiffs(new List<string>(), contentTypes, GitRepo.GetCurrentCommitId());
+            var diff = await GitTrackingService.GetTrackedItemDiffs(GitRepo.GetCurrentCommitId());
             Assert.NotEmpty(diff);
             Assert.Null(diff.First().Initial);
             Assert.Equal("Test Blog Post", diff.First().Final.Name);
@@ -215,8 +203,6 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Get_Diff_For_Commit_With_Delete()
         {
-            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
-
             await GitTrackingService.Delete(_initialTrackedItem);
             bool staged = GitTrackingService.Stage(_initialTrackedItem);
             Assert.True(staged);
@@ -225,7 +211,7 @@ namespace GitTracker.Tests
             Assert.NotNull(commitId);
 
             var diff = 
-                await GitTrackingService.GetTrackedItemDiffs(new List<string>(), contentTypes, commitId);
+                await GitTrackingService.GetTrackedItemDiffs(commitId);
             Assert.NotEmpty(diff);
             Assert.Null(diff.First().Final);
         }

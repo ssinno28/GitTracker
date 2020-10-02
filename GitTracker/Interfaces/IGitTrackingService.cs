@@ -8,8 +8,8 @@ namespace GitTracker.Interfaces
 {
     public interface IGitTrackingService
     {
-        Task<bool> Sync(string email, IList<Type> contentTypes, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null);
-        Task<TrackedItem> Create(string entity, IList<Type> contentTypes);
+        Task<bool> Sync(string email, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null);
+        Task<TrackedItem> Create(string entity);
         Task<TrackedItem> Create(TrackedItem trackedItem);
         Task<T> Create<T>(T trackedItem) where T : TrackedItem;
         Task Delete(TrackedItem trackedItem);
@@ -21,10 +21,13 @@ namespace GitTracker.Interfaces
         Task<T> CreateDraft<T>(string name, Type contentType, T trackedItem = null) where T : TrackedItem;
         bool Stage(TrackedItem trackedItem);
         bool Unstage(TrackedItem trackedItem);
-        Task<IList<TrackedItemConflict>> GetTrackedItemConflicts(IList<Type> contentTypes);
-        Task<bool> Publish(string email, IList<Type> contentTypes,
+        Task<IList<TrackedItemConflict>> GetTrackedItemConflicts();
+        Task<bool> Publish(string email,
             CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null);
-        Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(IList<string> paths, IList<Type> contentTypes,
+        Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(string currentCommitId = null, string newCommitId = null);
+        Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(Type trackedType, string currentCommitId = null,
+            string newCommitId = null);
+        Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(TrackedItem trackedItem,
             string currentCommitId = null, string newCommitId = null);
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -6,10 +7,12 @@ using GitTracker.Helpers;
 using GitTracker.Interfaces;
 using GitTracker.Models;
 using GitTracker.Tests.Helpers;
+using GitTracker.Tests.Models;
 using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Tag = LibGit2Sharp.Tag;
 
 namespace GitTracker.Tests
 {
@@ -40,9 +43,10 @@ namespace GitTracker.Tests
             SecondLocalPath = $"{settingsPath}\\local-2-repo";
             RemotePath = $"{settingsPath}\\remote-repo";
 
+            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Models.Tag), typeof(Category) };
             var serviceCollection = new ServiceCollection()
                 .AddLogging(x => x.AddConsole())
-                .AddGitTracking(LocalPath, "test", RemotePath, string.Empty);
+                .AddGitTracking(LocalPath, "test", RemotePath, string.Empty, contentTypes);
 
             UpdateOperationMock = new Mock<IUpdateOperation>();
             UpdateOperationMock.Setup(x => x.IsMatch(It.IsAny<Type>())).Returns(true);
