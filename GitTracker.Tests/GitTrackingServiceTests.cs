@@ -145,7 +145,7 @@ namespace GitTracker.Tests
             GitConfig.LocalPath = LocalPath;
 
             string contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
-            string filePath = $"{contentItemPath}\\body.md";
+            string filePath = Path.Combine(contentItemPath, "body.md");
 
             await File.WriteAllTextAsync(filePath, "My Test Body");
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
@@ -157,7 +157,7 @@ namespace GitTracker.Tests
             GitConfig.LocalPath = SecondLocalPath;
 
             contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
-            filePath = $"{contentItemPath}\\body.md";
+            filePath = Path.Combine(contentItemPath, "body.md");
 
             await File.WriteAllTextAsync(filePath, "My Test Body 2");
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
@@ -180,7 +180,7 @@ namespace GitTracker.Tests
             _initialTrackedItem.SeoDescription = "My New Seo Description";
 
             string contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
-            string filePath = $"{contentItemPath}\\body.md";
+            string filePath = Path.Combine(contentItemPath, "body.md");
 
             await File.WriteAllTextAsync(filePath, "My Test Body");
 
