@@ -46,7 +46,7 @@ namespace GitTracker.Tests
 
             GitTrackingService.Stage(trackedBlogPost);
             GitRepo.Commit("My Second Commit", Email);
-            GitRepo.Push(Email);
+            await GitTrackingService.Publish(Email);
 
             GitConfig.LocalPath = SecondLocalPath;
             await GitTrackingService.Sync(Email);
@@ -69,7 +69,7 @@ namespace GitTracker.Tests
 
             GitTrackingService.Stage(_initialTrackedItem);
             GitRepo.Commit("Repo 1 Second Commit", Email);
-            GitRepo.Push(Email);
+            await GitTrackingService.Publish(Email);
 
             GitConfig.LocalPath = SecondLocalPath;
 
@@ -96,7 +96,7 @@ namespace GitTracker.Tests
 
             GitTrackingService.Stage(_initialTrackedItem);
             GitRepo.Commit("Repo 1 Second Commit", Email);
-            GitRepo.Push(Email);
+            await GitTrackingService.Publish(Email);
 
             GitConfig.LocalPath = SecondLocalPath;
 
@@ -123,7 +123,7 @@ namespace GitTracker.Tests
 
             GitTrackingService.Stage(_initialTrackedItem);
             GitRepo.Commit("Repo 1 Second Commit", Email);
-            GitRepo.Push(Email);
+            await GitTrackingService.Publish(Email);
 
             GitConfig.LocalPath = SecondLocalPath;
 
@@ -157,7 +157,7 @@ namespace GitTracker.Tests
 
             GitTrackingService.Stage(_initialTrackedItem);
             GitRepo.Commit("Repo 1 Second Commit", Email);
-            GitRepo.Push(Email);
+            await GitTrackingService.Publish(Email);
 
             GitConfig.LocalPath = SecondLocalPath;
 

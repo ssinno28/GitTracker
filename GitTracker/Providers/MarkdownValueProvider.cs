@@ -25,7 +25,7 @@ namespace GitTracker.Providers
         public async Task<object> GetValue(TrackedItem trackedItem, PropertyInfo propertyInfo)
         {
             var contentItemPath = _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
-            string filePath = $"{contentItemPath}\\{propertyInfo.Name.ToSentenceCase().MakeUrlFriendly()}.md";
+            string filePath = Path.Combine(contentItemPath, $"{propertyInfo.Name.ToSentenceCase().MakeUrlFriendly()}.md");
 
             if (!File.Exists(filePath)) return string.Empty;
 
