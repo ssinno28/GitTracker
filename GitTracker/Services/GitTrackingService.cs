@@ -114,19 +114,19 @@ namespace GitTracker.Services
         public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(string currentCommitId = null, string newCommitId = null)
         {
             return await GetTrackedItemDiffs(new List<string>(), currentCommitId, newCommitId);
-        }        
-        
+        }
+
         public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(Type trackedType, string currentCommitId = null, string newCommitId = null)
         {
             string path = _pathProvider.GetRelativeTrackedItemPath(trackedType);
-            return await GetTrackedItemDiffs(new List<string>() {path}, currentCommitId, newCommitId);
+            return await GetTrackedItemDiffs(new List<string> { path }, currentCommitId, newCommitId);
         }
 
         public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(TrackedItem trackedItem,
             string currentCommitId = null, string newCommitId = null)
         {
             string path = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
-            return await GetTrackedItemDiffs(new List<string>() { path }, currentCommitId, newCommitId);
+            return await GetTrackedItemDiffs(new List<string> { path }, currentCommitId, newCommitId);
         }
 
         private async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(IList<string> paths, string currentCommitId = null, string newCommitId = null)
@@ -350,6 +350,8 @@ namespace GitTracker.Services
 
         public async Task<TrackedItem> Create(TrackedItem trackedItem)
         {
+            CheckNameExists(trackedItem.GetType(), trackedItem);
+
             await SetNonJsonValues(trackedItem);
 
             trackedItem.Id = Guid.NewGuid().ToString();
@@ -366,11 +368,6 @@ namespace GitTracker.Services
             return (T)await Create((TrackedItem)trackedItem);
         }
 
-        public async Task<T> CreateDraft<T>(string name, Type contentType, T trackedItem = null) where T : TrackedItem
-        {
-            return (T)await CreateDraft(name, contentType, (TrackedItem)trackedItem);
-        }
-
         public bool Stage(TrackedItem trackedItem)
         {
             var relativeTrackedItemPath =
@@ -380,8 +377,8 @@ namespace GitTracker.Services
                 _gitRepo.GetUnstagedItems().Where(x => x.Contains(relativeTrackedItemPath));
 
             return _gitRepo.Stage(unstagedItems.ToArray());
-        }        
-        
+        }
+
         public bool Unstage(TrackedItem trackedItem)
         {
             var relativeTrackedItemPath =
@@ -409,8 +406,16 @@ namespace GitTracker.Services
             return trackedItem;
         }
 
+        public async Task<T> ChangeName<T>(string newName, T trackedItem) where T : TrackedItem
+        {
+            return (T)await ChangeName(newName, (TrackedItem)trackedItem);
+        }
+
         public async Task<TrackedItem> ChangeName(string newName, TrackedItem trackedItem)
         {
+            trackedItem.Name = newName;
+            CheckNameExists(trackedItem.GetType(), trackedItem);
+
             trackedItem.PreviousPaths.Add(_pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem));
             await _fileProvider.MoveFile(newName, trackedItem);
             await _fileProvider.UpsertFiles(trackedItem);
@@ -419,9 +424,9 @@ namespace GitTracker.Services
             return trackedItem;
         }
 
-        public async Task<T> ChangeName<T>(string newName, T trackedItem) where T : TrackedItem
+        public async Task<T> CreateDraft<T>(string name, Type contentType, T trackedItem = null) where T : TrackedItem
         {
-            return (T)await ChangeName(newName, (TrackedItem)trackedItem);
+            return (T)await CreateDraft(name, contentType, (TrackedItem)trackedItem);
         }
 
         public async Task<TrackedItem> CreateDraft(string name, Type contentType, TrackedItem trackedItem = null)
@@ -435,10 +440,21 @@ namespace GitTracker.Services
             trackedItem.Id = Guid.NewGuid().ToString();
             trackedItem.CreatedDate = DateTimeOffset.Now;
 
+            CheckNameExists(contentType, trackedItem);
+
             await _fileProvider.UpsertFiles(trackedItem);
             await PerformCreate(trackedItem);
 
             return trackedItem;
+        }
+
+        private void CheckNameExists(Type trackedItemType, TrackedItem trackedItem)
+        {
+            string trackedItemDirectory = _pathProvider.GetTrackedItemPath(trackedItemType, trackedItem);
+            if (Directory.Exists(trackedItemDirectory))
+            {
+                throw new Exception("A tracked item with this name already exists!");
+            }
         }
 
         public async Task Delete(TrackedItem trackedItem)

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,14 +26,18 @@ namespace GitTracker.Tests
         }
 
         [Fact]
+        public async Task Test_Name_Already_Exists()
+        {
+            await Assert.ThrowsAnyAsync<Exception>(async () =>
+                    await GitTrackingService.Create(new BlogPost()
+                    {
+                        Name = "Test Blog Post"
+                    }));
+        }
+
+        [Fact]
         public async Task Test_Sync_On_Repo()
         {
-            GitConfig.LocalPath = SecondLocalPath;
-
-            await GitTrackingService.Sync(Email);
-
-            GitConfig.LocalPath = LocalPath;
-
             var trackedBlogPost =
                 await GitTrackingService.Create(new BlogPost()
                 {
@@ -48,8 +53,8 @@ namespace GitTracker.Tests
 
             var commits = GitRepo.GetCommits();
             Assert.NotEmpty(commits);
-        }        
-        
+        }
+
         [Fact]
         public async Task Test_Sync_On_Repo_Merge_Conflict_Take_Theirs()
         {
@@ -75,8 +80,8 @@ namespace GitTracker.Tests
 
             bool result = await GitTrackingService.Sync(Email, CheckoutFileConflictStrategy.Theirs);
             Assert.True(result);
-        }        
-        
+        }
+
         [Fact]
         public async Task Test_Sync_On_Repo_Merge_Conflict_Take_Ours()
         {
@@ -102,8 +107,8 @@ namespace GitTracker.Tests
 
             bool result = await GitTrackingService.Sync(Email, CheckoutFileConflictStrategy.Ours);
             Assert.True(result);
-        }       
-        
+        }
+
         [Fact]
         public async Task Test_Sync_On_Repo_Merge_Conflict_Take_Normal()
         {
@@ -133,8 +138,8 @@ namespace GitTracker.Tests
             var conflicts = await GitTrackingService.GetTrackedItemConflicts();
             Assert.Equal(1, conflicts.Count);
             Assert.Equal(2, conflicts.First().ChangedProperties.Count);
-        }        
-        
+        }
+
         [Fact]
         public async Task Test_Sync_On_Repo_Merge_Conflict_Take_Normal_Value_Provider()
         {
@@ -172,8 +177,8 @@ namespace GitTracker.Tests
             Assert.Equal(1, conflicts.Count);
             Assert.Equal(2, conflicts.First().ChangedProperties.Count);
             Assert.Equal(1, conflicts.First().ValueProviderConflicts.Count);
-        }        
-        
+        }
+
         [Fact]
         public async Task Test_Get_Diff_FromHead()
         {
@@ -189,8 +194,8 @@ namespace GitTracker.Tests
             var diff = await GitTrackingService.GetTrackedItemDiffs();
             Assert.NotEmpty(diff);
             Assert.NotEmpty(diff.First().ValueProviderDiffs);
-        }        
-        
+        }
+
         [Fact]
         public async Task Test_Get_Diff_For_Commit()
         {
@@ -198,8 +203,8 @@ namespace GitTracker.Tests
             Assert.NotEmpty(diff);
             Assert.Null(diff.First().Initial);
             Assert.Equal("Test Blog Post", diff.First().Final.Name);
-        }        
-        
+        }
+
         [Fact]
         public async Task Test_Get_Diff_For_Commit_With_Delete()
         {
@@ -210,7 +215,7 @@ namespace GitTracker.Tests
             string commitId = GitRepo.Commit("My Second Commit", Email);
             Assert.NotNull(commitId);
 
-            var diff = 
+            var diff =
                 await GitTrackingService.GetTrackedItemDiffs(commitId);
             Assert.NotEmpty(diff);
             Assert.Null(diff.First().Final);

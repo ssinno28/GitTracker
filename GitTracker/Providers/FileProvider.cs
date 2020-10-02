@@ -89,6 +89,10 @@ namespace GitTracker.Providers
                     foreach (var trackedItem in trackedItems)
                     {
                         var contentItemPath = _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
+                        if (!Directory.Exists(contentItemPath))
+                        {
+                            Directory.CreateDirectory(contentItemPath);
+                        }
 
                         string fileContents =
                             JsonConvert.SerializeObject(trackedItem, Formatting.Indented, new JsonSerializerSettings
