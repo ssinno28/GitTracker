@@ -29,5 +29,6 @@ namespace GitTracker.Interfaces
         IList<Conflict> GetMergeConflicts();
         GitMergeCommits GetDiff3Files(string localPath, string remotePath, string basePath = null);
         string GetFileFromCommit(string commitId, string path);
+        RevertStatus RevertCommit(string commitId, string email, string userName = null);
     }
 }

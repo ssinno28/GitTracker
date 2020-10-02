@@ -138,6 +138,27 @@ namespace GitTracker.Repositories
             return fileContents;
         }
 
+        public RevertStatus RevertCommit(string commitId, string email, string userName = null)
+        {
+            RevertStatus revertStatus;
+            using (var repo = LocalRepo)
+            {
+                var commit = repo.Commits.First(x => x.Id.ToString().Equals(commitId));
+
+                var signature = new Signature(
+                    new Identity(userName ?? email, email), DateTimeOffset.Now);
+
+                var revertResult = repo.Revert(commit, signature, new RevertOptions
+                {
+                    FileConflictStrategy = CheckoutFileConflictStrategy.Normal
+                });
+
+                revertStatus = revertResult.Status;
+            }
+
+            return revertStatus;
+        }
+
         public GitMergeCommits GetDiff3Files(string localPath, string remotePath, string basePath = null)
         {
             var gitMergeCommits = new GitMergeCommits();

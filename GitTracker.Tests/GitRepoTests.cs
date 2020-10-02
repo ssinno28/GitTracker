@@ -132,6 +132,13 @@ namespace GitTracker.Tests
             untrackedFiles = GitRepo.GetUnstagedItems();
 
             Assert.Equal(1, untrackedFiles.Count);
+        }        
+        
+        [Fact]
+        public void Test_Revert_Commit()
+        {
+            var revertStatus = GitRepo.RevertCommit(FirstCommitId, Email);
+            Assert.Equal(RevertStatus.Reverted, revertStatus);
         }
 
         [Fact]
