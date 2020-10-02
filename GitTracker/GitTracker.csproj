@@ -11,4 +11,12 @@
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <Version>0.0.1</Version>
+    <RepositoryUrl>https://github.com/ssinno28/GitTracker</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Description>This is an experimental library that allows you to use git to version control your content.</Description>
+    <Authors>Sammi Sinno</Authors>
+  </PropertyGroup>
+
 </Project>
