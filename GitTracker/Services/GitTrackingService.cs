@@ -376,7 +376,7 @@ namespace GitTracker.Services
                 _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
 
             var unstagedItems =
-                _gitRepo.GetUnstagedItems().Where(x => x.Contains(relativeTrackedItemPath));
+                _gitRepo.GetUnstagedItems();
 
             return _gitRepo.Stage(unstagedItems.ToArray());
         }        
