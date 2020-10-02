@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using GitTracker.Models;
 using GitTracker.Tests.Models;
 using LibGit2Sharp;
 using Xunit;
@@ -179,6 +180,54 @@ namespace GitTracker.Tests
             Assert.Equal(1, conflicts.Count);
             Assert.Equal(2, conflicts.First().ChangedProperties.Count);
             Assert.Equal(1, conflicts.First().ValueProviderConflicts.Count);
+        }        
+        
+        [Fact]
+        public async Task Test_Get_Diff_FromHead()
+        {
+            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
+
+            _initialTrackedItem.SeoDescription = "My New Seo Description";
+
+            string contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
+            string filePath = $"{contentItemPath}\\body.md";
+
+            await File.WriteAllTextAsync(filePath, "My Test Body");
+
+            _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
+
+            var diff = await GitTrackingService.GetTrackedItemDiffs(new List<string>(), contentTypes);
+            Assert.NotEmpty(diff);
+            Assert.NotEmpty(diff.First().ValueProviderDiffs);
+        }        
+        
+        [Fact]
+        public async Task Test_Get_Diff_For_Commit()
+        {
+            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
+
+            var diff = await GitTrackingService.GetTrackedItemDiffs(new List<string>(), contentTypes, GitRepo.GetCurrentCommitId());
+            Assert.NotEmpty(diff);
+            Assert.Null(diff.First().Initial);
+            Assert.Equal("Test Blog Post", diff.First().Final.Name);
+        }        
+        
+        [Fact]
+        public async Task Test_Get_Diff_For_Commit_With_Delete()
+        {
+            var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
+
+            await GitTrackingService.Delete(_initialTrackedItem);
+            bool staged = GitTrackingService.Stage(_initialTrackedItem);
+            Assert.True(staged);
+
+            string commitId = GitRepo.Commit("My Second Commit", Email);
+            Assert.NotNull(commitId);
+
+            var diff = 
+                await GitTrackingService.GetTrackedItemDiffs(new List<string>(), contentTypes, commitId);
+            Assert.NotEmpty(diff);
+            Assert.Null(diff.First().Final);
         }
 
         public async Task InitializeAsync()

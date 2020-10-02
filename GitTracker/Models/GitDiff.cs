@@ -14,7 +14,9 @@ namespace GitTracker.Models
         public string FileDiff { get; set; }
         public string Index { get; set; }
         public string InitialFile { get; set; }
+        public string InitialFileContent { get; set; }
         public string FinalFile { get; set; }
+        public string FinalFileContent { get; set; }
         public string Path { get; set; }
         public ChangeKind ChangeKind { get; set; }
     }

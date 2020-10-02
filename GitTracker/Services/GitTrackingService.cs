@@ -110,6 +110,98 @@ namespace GitTracker.Services
             return true;
         }
 
+        public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(IList<string> paths, IList<Type> contentTypes, string currentCommitId = null, string newCommitId = null)
+        {
+            IList<TrackedItemDiff> trackedItemDiffs = new List<TrackedItemDiff>();
+
+            IList<GitDiff> diffs;
+            if (!string.IsNullOrEmpty(currentCommitId) && !string.IsNullOrEmpty(newCommitId))
+            {
+                diffs = _gitRepo.GetDiff(paths, currentCommitId, newCommitId);
+            }
+            else if (!string.IsNullOrEmpty(currentCommitId))
+            {
+                diffs = _gitRepo.GetDiff(paths, currentCommitId);
+            }
+            else
+            {
+                diffs = _gitRepo.GetDiffFromHead();
+            }
+
+            foreach (var diffGrouping in diffs.GroupBy(x => Path.GetDirectoryName(x.Path)))
+            {
+                var trackedItemDiff = new TrackedItemDiff
+                {
+                    ValueProviderDiffs = new List<GitDiff>()
+                };
+
+                foreach (var gitDiff in diffGrouping.Where(x => x.Path.EndsWith(".json")))
+                {
+                    trackedItemDiff.Initial = await DeserializeContentItem(gitDiff.InitialFileContent, contentTypes);
+                    trackedItemDiff.Final = await DeserializeContentItem(gitDiff.FinalFileContent, contentTypes);
+
+                    trackedItemDiff.TrackedItemGitDiff = gitDiff;
+                }
+
+                foreach (var gitDiff in diffGrouping.Where(x => !x.Path.EndsWith(".json")))
+                {
+                    trackedItemDiff.ValueProviderDiffs.Add(gitDiff);
+
+                    var propertyInfo = GetValueProviderProperty(trackedItemDiff.Initial.GetType(), gitDiff.Path);
+
+                    propertyInfo.SetValue(trackedItemDiff.Initial, gitDiff.InitialFileContent);
+                    propertyInfo.SetValue(trackedItemDiff.Final, gitDiff.FinalFileContent);
+                }
+
+                trackedItemDiff.ChangedProperties = GetChangedProperties(trackedItemDiff.Initial, trackedItemDiff.Final);
+                trackedItemDiffs.Add(trackedItemDiff);
+            }
+
+            return trackedItemDiffs;
+        }
+
+        private IList<PropertyInfo> GetChangedProperties(TrackedItem ours, TrackedItem theirs)
+        {
+            if (ours == null || theirs == null)
+            {
+                return new List<PropertyInfo>();
+            }
+
+            return ours.GetType()
+            .GetProperties()
+            .Where(x =>
+            {
+                var ourValue = x.GetValue(ours);
+                var theirValue = x.GetValue(theirs);
+
+                if (ourValue == null && theirValue != null)
+                {
+                    return true;
+                }
+
+                if (theirValue == null && ourValue != null)
+                {
+                    return true;
+                }
+
+                if (ourValue == null && theirValue == null)
+                {
+                    return false;
+                }
+
+                return !ourValue.Equals(theirValue);
+            })
+            .ToList();
+        }
+
+        private PropertyInfo GetValueProviderProperty(Type contentType, string fileName)
+        {
+            string propertyName = Path.GetFileNameWithoutExtension(fileName);
+            return contentType
+                .GetProperties()
+                .First(x => x.Name.ToSentenceCase().MakeUrlFriendly().Equals(propertyName));
+        }
+
         public async Task<IList<TrackedItemConflict>> GetTrackedItemConflicts(IList<Type> contentTypes)
         {
             var trackedItemConflicts = new List<TrackedItemConflict>();
@@ -117,7 +209,7 @@ namespace GitTracker.Services
 
             foreach (var conflictGrouping in mergeConflicts.GroupBy(x => Path.GetDirectoryName(x.Ours.Path)))
             {
-                TrackedItemConflict trackedItemConflict = new TrackedItemConflict()
+                TrackedItemConflict trackedItemConflict = new TrackedItemConflict
                 {
                     ValueProviderConflicts = new List<ValueProviderConflict>(),
                     ChangedProperties = new List<PropertyInfo>()
@@ -137,38 +229,7 @@ namespace GitTracker.Services
                     trackedItemConflict.Theirs = await DeserializeContentItem(fileContents.TheirFile, contentTypes);
 
                     trackedItemConflict.ChangedProperties =
-                        trackedItemConflict.Ours.GetType()
-                            .GetProperties()
-                            .Where(x =>
-                            {
-                                var valueProvider =
-                                    _valueProviders.FirstOrDefault(vp => vp.IsMatch(x));
-                                if (valueProvider != null)
-                                {
-                                    return false;
-                                }
-
-                                var ourValue = x.GetValue(trackedItemConflict.Ours);
-                                var theirValue = x.GetValue(trackedItemConflict.Theirs);
-
-                                if (ourValue == null && theirValue != null)
-                                {
-                                    return true;
-                                }
-
-                                if (theirValue == null && ourValue != null)
-                                {
-                                    return true;
-                                }
-
-                                if (ourValue == null && theirValue == null)
-                                {
-                                    return false;
-                                }
-
-                                return !ourValue.Equals(theirValue);
-                            })
-                            .ToList();
+                        GetChangedProperties(trackedItemConflict.Ours, trackedItemConflict.Theirs);
                 }
 
                 foreach (var conflict in conflictGrouping.Where(x => !x.Ours.Path.EndsWith(".json")))
@@ -176,14 +237,9 @@ namespace GitTracker.Services
                     var fileContents =
                         _gitRepo.GetDiff3Files(conflict.Ours.Path, conflict.Theirs.Path, conflict.Ancestor?.Path);
 
-                    string fileName = Path.GetFileNameWithoutExtension(conflict.Ours.Path);
-
                     var propertyInfo =
-                        trackedItemConflict.Ours.GetType()
-                            .GetProperties()
-                            .First(x => x.Name.ToSentenceCase().MakeUrlFriendly().Equals(fileName));
+                        GetValueProviderProperty(trackedItemConflict.Ours.GetType(), conflict.Ours.Path);
 
-                    trackedItemConflict.ChangedProperties.Add(propertyInfo);
                     propertyInfo.SetValue(trackedItemConflict.Ours, fileContents.OurFile);
                     propertyInfo.SetValue(trackedItemConflict.Theirs, fileContents.TheirFile);
 
@@ -207,6 +263,8 @@ namespace GitTracker.Services
                     trackedItemConflict.ValueProviderConflicts.Add(valueProviderConflict);
                 }
 
+                trackedItemConflict.ChangedProperties =
+                    GetChangedProperties(trackedItemConflict.Ours, trackedItemConflict.Theirs);
                 trackedItemConflicts.Add(trackedItemConflict);
             }
 
@@ -297,13 +355,23 @@ namespace GitTracker.Services
         public bool Stage(TrackedItem trackedItem)
         {
             var relativeTrackedItemPath =
-                _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
+                _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
 
-            var paths =
-                Directory.GetFiles(relativeTrackedItemPath, "*", SearchOption.AllDirectories)
-                    .ToArray();
+            var unstagedItems =
+                _gitRepo.GetUnstagedItems().Where(x => x.Contains(relativeTrackedItemPath));
 
-            return _gitRepo.Stage(paths);
+            return _gitRepo.Stage(unstagedItems.ToArray());
+        }        
+        
+        public bool Unstage(TrackedItem trackedItem)
+        {
+            var relativeTrackedItemPath =
+                _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
+
+            var unstagedItems =
+                _gitRepo.GetStagedItems().Where(x => x.Contains(relativeTrackedItemPath));
+
+            return _gitRepo.Unstage(unstagedItems.ToArray());
         }
 
         public async Task<T> Update<T>(T trackedItem) where T : TrackedItem
@@ -368,6 +436,11 @@ namespace GitTracker.Services
 
         private async Task<TrackedItem> DeserializeContentItem(string document, IList<Type> contentTypes)
         {
+            if (string.IsNullOrEmpty(document))
+            {
+                return null;
+            }
+
             var contentType = GetContentType(document, contentTypes);
             var serializerSettings = new JsonSerializerSettings
             {

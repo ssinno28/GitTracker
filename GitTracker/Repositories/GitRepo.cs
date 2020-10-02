@@ -121,10 +121,17 @@ namespace GitTracker.Repositories
                 var ourCommit =
                     repo.Commits.First(x => x.Id.ToString().Equals(commitId));
 
-                var ourBlob = ourCommit[path].Target as Blob;
-                using (var content = new StreamReader(ourBlob.GetContentStream(), Encoding.UTF8))
+                try
                 {
-                    fileContents = content.ReadToEnd();
+                    var ourBlob = ourCommit[path].Target as Blob;
+                    using (var content = new StreamReader(ourBlob.GetContentStream(), Encoding.UTF8))
+                    {
+                        fileContents = content.ReadToEnd();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogInformation(ex, $"file does not exist for commit id ${commitId} and path ${path}");
                 }
             }
 
@@ -521,7 +528,6 @@ namespace GitTracker.Repositories
             {
                 List<Commit> commitList = new List<Commit>();
 
-
                 if (paths == null || !paths.Any())
                 {
                     commitList = repo.Commits.ToList();
@@ -554,6 +560,7 @@ namespace GitTracker.Repositories
                 }
                 else
                 {
+                    endId = commitList[indexOfCommit + 1] != null ? commitList[indexOfCommit + 1].Id.ToString() : null;
                     repoDifferences =
                         repo.Diff.Compare<Patch>((Equals(commitList[indexOfCommit + 1], null))
                             ? null
@@ -581,7 +588,7 @@ namespace GitTracker.Repositories
                 catch { } // If the file has been renamed in the past- this search will fail
             }
 
-            return GetGitDiffs(patchEntryChanges);
+            return GetGitDiffs(patchEntryChanges, endId, id);
         }
 
         public IList<GitDiff> GetDiffFromHead()
@@ -595,10 +602,10 @@ namespace GitTracker.Repositories
                 catch { } // If the file has been renamed in the past- this search will fail
             }
 
-            return GetGitDiffs(patchEntryChanges);
+            return GetGitDiffs(patchEntryChanges, GetCurrentCommitId());
         }
 
-        private IList<GitDiff> GetGitDiffs(IList<PatchEntryChanges> patchEntryChanges)
+        private IList<GitDiff> GetGitDiffs(IList<PatchEntryChanges> patchEntryChanges, string commitId, string endCommitId = null)
         {
             IList<GitDiff> diffs = new List<GitDiff>();
 
@@ -610,11 +617,29 @@ namespace GitTracker.Repositories
                 var startFileMatch = Regex.Match(patch, "^---(.*)", RegexOptions.Multiline);
                 var endFileMatch = Regex.Match(patch, "^\\+\\+\\+(.*)", RegexOptions.Multiline);
 
+                string finalFileContent;
+                if (patchEntryChange.Status == ChangeKind.Deleted)
+                {
+                    finalFileContent = null;
+                }
+                else if (!string.IsNullOrEmpty(endCommitId))
+                {
+                    finalFileContent = GetFileFromCommit(endCommitId, patchEntryChange.Path);
+                }
+                else
+                {
+                    finalFileContent = File.ReadAllText(Path.Combine(_gitConfig.LocalPath, patchEntryChange.Path));
+                }
+
                 var diff = new GitDiff
                 {
+                    FinalFileContent = finalFileContent,
                     FinalFile = endFileMatch.Value,
                     Index = indexMatch.Value,
                     FileDiff = fileDiffMatch.Value,
+                    InitialFileContent = patchEntryChange.Status == ChangeKind.Added
+                        ? null
+                        : GetFileFromCommit(commitId, patchEntryChange.OldPath),
                     InitialFile = startFileMatch.Value,
                     Path = patchEntryChange.Path,
                     ChangeKind = patchEntryChange.Status
