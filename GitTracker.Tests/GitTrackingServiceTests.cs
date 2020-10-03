@@ -219,6 +219,34 @@ namespace GitTracker.Tests
                 await GitTrackingService.GetTrackedItemDiffs(commitId);
             Assert.NotEmpty(diff);
             Assert.Null(diff.First().Final);
+        }        
+        
+        [Fact]
+        public async Task Test_Switch_Branch()
+        {
+            GitRepo.CreateBranch("test-branch");
+            await GitRepo.ChangeBranch("test-branch");
+
+            await GitTrackingService.Delete(_initialTrackedItem);
+            bool staged = GitTrackingService.Stage(_initialTrackedItem);
+            Assert.True(staged);
+
+            string commitId = GitRepo.Commit("My Second Commit", Email);
+            Assert.NotNull(commitId);
+
+            bool result = await GitTrackingService.SwitchBranch("master");
+            Assert.True(result);
+        }        
+        
+        [Fact]
+        public async Task Test_Switch_Branch_Fails()
+        {
+            GitRepo.CreateBranch("test-branch");
+            await GitRepo.ChangeBranch("test-branch");
+
+            await GitTrackingService.Delete(_initialTrackedItem);
+
+            await Assert.ThrowsAnyAsync<Exception>(async () => await GitTrackingService.SwitchBranch("master"));
         }
 
         public async Task InitializeAsync()

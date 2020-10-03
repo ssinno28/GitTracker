@@ -119,7 +119,7 @@ namespace GitTracker.Repositories
             using (var repo = LocalRepo)
             {
                 var ourCommit =
-                    repo.Commits.First(x => x.Id.ToString().Equals(commitId));
+                    repo.Branches.SelectMany(x => x.Commits).First(x => x.Id.ToString().Equals(commitId));
 
                 try
                 {
@@ -543,7 +543,6 @@ namespace GitTracker.Repositories
             }
         }
 
-
         public IList<GitDiff> GetDiff(IList<string> paths, string id, string endId = null)
         {
             IList<PatchEntryChanges> patchEntryChanges = new List<PatchEntryChanges>();
@@ -553,7 +552,7 @@ namespace GitTracker.Repositories
 
                 if (paths == null || !paths.Any())
                 {
-                    commitList = repo.Commits.ToList();
+                    commitList = repo.Branches.SelectMany(x => x.Commits).ToList();
                 }
                 else
                 {

@@ -58,6 +58,24 @@ namespace GitTracker.Services
             return _gitRepo.Push(email, userName);
         }
 
+        public async Task<bool> SwitchBranch(string branchName)
+        {
+            var diffFromHead = _gitRepo.GetDiffFromHead();
+            if (diffFromHead.Any())
+            {
+                throw new Exception("Can not switch branch when you have pending changes!");
+            }
+
+            string currentCommitId = _gitRepo.GetCurrentCommitId();
+            await _gitRepo.ChangeBranch(branchName);
+
+            string newCommitId = _gitRepo.GetCurrentCommitId();
+
+            await PerformOpsBasedOnDiff(new List<string>(), currentCommitId, newCommitId);
+
+            return true;
+        }
+
         public async Task<bool> Sync(string email, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)
         {
             // if this is the first pull then no need to check the diff
@@ -83,8 +101,15 @@ namespace GitTracker.Services
             // get new commit id
             string newCommitId = _gitRepo.GetCurrentCommitId();
 
+            await PerformOpsBasedOnDiff(new List<string>(), currentCommitId, newCommitId);
+
+            return true;
+        }
+
+        private async Task PerformOpsBasedOnDiff(IList<string> paths, string currentCommitId, string newCommitId)
+        {
             // get diff from both
-            var diff = _gitRepo.GetDiff(new List<string>(), currentCommitId, newCommitId);
+            var diff = _gitRepo.GetDiff(paths, currentCommitId, newCommitId);
 
             foreach (var gitDiff in diff)
             {
@@ -106,10 +131,7 @@ namespace GitTracker.Services
                         break;
                 }
             }
-
-            return true;
         }
-
 
         public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(string currentCommitId = null, string newCommitId = null)
         {

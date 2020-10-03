@@ -19,6 +19,13 @@ namespace GitTracker.Interfaces
         Task<bool> Sync(string email, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null);
 
         /// <summary>
+        /// Switches to the branch specified and peforms any update/delete/create operations based on diff between branches
+        /// </summary>
+        /// <param name="branchName"></param>
+        /// <returns></returns>
+        Task<bool> SwitchBranch(string branchName);
+
+        /// <summary>
         /// Will create an entity based on a json string that is passed in. It derives the Type from the TypeDefiniton field in the json.
         /// </summary>
         /// <param name="entity"></param>
