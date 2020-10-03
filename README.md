@@ -28,6 +28,8 @@ The `AddGitTracking` extension method takes these arguments:
             IList<Type> trackedTypes)
 ```
 
+The list of tracked types are POCO objects that inherit from `TrackedItem`. 
+
 It is also very important to wire up your CRUD operations using the `ICreateOperation`, `IDeleteOperation` and `IUpdateOperation` interfaces. Whenever an item is created, updated or deleted in the local git repository, the appropriate CRUD operation is called to also apply that change to whatever database you are using. 
 
 ## Content Storage
