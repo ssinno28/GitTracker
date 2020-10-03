@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -71,7 +72,8 @@ namespace GitTracker.Services
 
             string newCommitId = _gitRepo.GetCurrentCommitId();
 
-            await PerformOpsBasedOnDiff(new List<string>(), currentCommitId, newCommitId);
+            var diff = _gitRepo.GetDiffBetweenBranches(currentCommitId, newCommitId);
+            await PerformOpsBasedOnDiff(diff, currentCommitId);
 
             return true;
         }
@@ -101,16 +103,15 @@ namespace GitTracker.Services
             // get new commit id
             string newCommitId = _gitRepo.GetCurrentCommitId();
 
-            await PerformOpsBasedOnDiff(new List<string>(), currentCommitId, newCommitId);
+            // get diff from both
+            var diff = _gitRepo.GetDiff(new List<string>(), currentCommitId, newCommitId);
+            await PerformOpsBasedOnDiff(diff, currentCommitId);
 
             return true;
         }
 
-        private async Task PerformOpsBasedOnDiff(IList<string> paths, string currentCommitId, string newCommitId)
+        private async Task PerformOpsBasedOnDiff(IList<GitDiff> diff, string currentCommitId)
         {
-            // get diff from both
-            var diff = _gitRepo.GetDiff(paths, currentCommitId, newCommitId);
-
             foreach (var gitDiff in diff)
             {
                 switch (gitDiff.ChangeKind)
@@ -214,6 +215,12 @@ namespace GitTracker.Services
             {
                 var ourValue = x.GetValue(ours);
                 var theirValue = x.GetValue(theirs);
+
+                if (x.IsPropertyACollection())
+                {
+                    //TODO: figure out how to compare lists
+                    return false;
+                }
 
                 if (ourValue == null && theirValue != null)
                 {

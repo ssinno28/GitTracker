@@ -552,7 +552,7 @@ namespace GitTracker.Repositories
 
                 if (paths == null || !paths.Any())
                 {
-                    commitList = repo.Branches.SelectMany(x => x.Commits).ToList();
+                    commitList = repo.Commits.ToList();
                 }
                 else
                 {
@@ -606,6 +606,33 @@ namespace GitTracker.Repositories
                             }
                         }
                     }
+                }
+                catch { } // If the file has been renamed in the past- this search will fail
+            }
+
+            return GetGitDiffs(patchEntryChanges, endId, id);
+        }
+
+        public IList<GitDiff> GetDiffBetweenBranches(string id, string endId)
+        {
+            IList<PatchEntryChanges> patchEntryChanges = new List<PatchEntryChanges>();
+            using (var repo = LocalRepo)
+            {
+                List<Commit> commitList = repo.Branches.SelectMany(x => x.Commits).ToList();
+                commitList.Add(null); // Added to show correct initial add
+
+                var commitToView = commitList.First(x => x.Id.ToString().Equals(id));
+                int indexOfCommit = commitList.IndexOf(commitToView);
+
+                var endCommit = commitList.First(x => x.Id.ToString().Equals(endId));
+                var indexOfEndCommit = commitList.IndexOf(endCommit);
+                var repoDifferences = repo.Diff.Compare<Patch>((Equals(commitList[indexOfCommit], null))
+                    ? null
+                    : commitList[indexOfCommit].Tree, (Equals(commitList[indexOfEndCommit], null)) ? null : commitList[indexOfEndCommit].Tree);
+
+                try
+                {
+                    patchEntryChanges = repoDifferences.ToList();
                 }
                 catch { } // If the file has been renamed in the past- this search will fail
             }

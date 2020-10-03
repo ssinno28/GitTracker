@@ -73,7 +73,7 @@ You'll need to create a personal access token as documented here: https://docs.g
                     }
 
                     // Using theirs will make sure that there are never any merge conflicts
-                    _gitTrackingService.Sync("your_email", CheckoutFileConflictStrategy.Theirs);
+                    await _gitTrackingService.Sync("your_email", CheckoutFileConflictStrategy.Theirs);
 
                     return HttpStatusCode.Accepted;
                 }
@@ -101,6 +101,18 @@ gitTrackingService.Stage(trackedBlogPost);
 // here we work directly with the git repo to make a commit
 gitRepo.Commit("This is my commit", email);
 await gitTrackingService.Publish(email);
+```
+
+
+
+## Changing Branches, Pulling and Pushing
+
+When performing any of these operations you will always want to use the IGitTrackingService. The reason being is that it will make sure your data store is in sync with the git repo, whereas IGitRepo methods only affect the git repository. 
+
+```c#
+await _gitTrackingService.SwitchBranch("master");
+await _gitTrackingService.Publish(email);
+await _gitTrackingService.Sync(email);
 ```
 
 
@@ -146,7 +158,7 @@ If you want to make sure that, value is always properly fetched from a separate 
 
 There are several different ways you can get a diff (for instance a diff from the head of the repo or between two commits). 
 
-```
+```c#
 // Gets diff from head
 var diff = await gitTrackingService.GetTrackedItemDiffs();
 
