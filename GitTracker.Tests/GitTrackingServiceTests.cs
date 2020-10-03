@@ -219,8 +219,8 @@ namespace GitTracker.Tests
                 await GitTrackingService.GetTrackedItemDiffs(commitId);
             Assert.NotEmpty(diff);
             Assert.Null(diff.First().Final);
-        }        
-        
+        }
+
         [Fact]
         public async Task Test_Switch_Branch()
         {
@@ -236,6 +236,9 @@ namespace GitTracker.Tests
 
             bool result = await GitTrackingService.SwitchBranch("master");
             Assert.True(result);
+
+            bool switchBackResult = await GitTrackingService.SwitchBranch("test-branch");
+            Assert.True(switchBackResult);
         }        
         
         [Fact]

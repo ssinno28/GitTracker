@@ -40,9 +40,9 @@ namespace GitTracker.Tests
             string settingsPath
                 = Path.GetFullPath(Path.Combine($"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}", @"..\..\..\settings"));
 
-            LocalPath = $"{settingsPath}\\local-repo";
-            SecondLocalPath = $"{settingsPath}\\local-2-repo";
-            RemotePath = $"{settingsPath}\\remote-repo";
+            LocalPath = Path.Combine(settingsPath, "local-repo");
+            SecondLocalPath = Path.Combine(settingsPath, "local-2-repo");
+            RemotePath = Path.Combine(settingsPath, "remote-repo");
 
             var contentTypes = new List<Type> { typeof(BlogPost), typeof(Models.Tag), typeof(Category) };
             var serviceCollection = new ServiceCollection()
