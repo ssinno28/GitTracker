@@ -6,6 +6,7 @@ namespace GitTracker.Interfaces
 {
     public interface IValueProvider
     {
+        string Extension { get; }
         bool IsMatch(PropertyInfo propertyInfo);
         Task<object> GetValue(TrackedItem trackedItem, PropertyInfo propertyInfo);
     }

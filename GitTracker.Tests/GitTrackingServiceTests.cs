@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using GitTracker.Tests.Models;
 using LibGit2Sharp;
@@ -246,10 +247,10 @@ namespace GitTracker.Tests
             var diff = await GitTrackingService.GetTrackedItemDiffs();
             Assert.NotEmpty(diff);
             Assert.NotEmpty(diff.First().ValueProviderDiffs);
-        }        
-        
+        }
+
         [Fact]
-        public async Task Test_Get_Diff_FromHead_WithValueProvider_Delete()
+        public async Task Test_Get_Diff_WithValueProvider_Delete()
         {
             string contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
             string filePath = Path.Combine(contentItemPath, "body.md");
@@ -261,10 +262,31 @@ namespace GitTracker.Tests
             GitRepo.Commit("My Second Commit", Email);
 
             await GitTrackingService.Delete(_initialTrackedItem);
+            GitTrackingService.Stage(_initialTrackedItem);
+            string commitId = GitRepo.Commit("My Third Commit", Email);
+
+            var diff = await GitTrackingService.GetTrackedItemDiffs(commitId);
+            Assert.NotEmpty(diff);
+            Assert.NotEmpty(diff.First().ValueProviderDiffs);
+        }     
+        
+        [Fact]
+        public async Task Test_Get_Diff_FromHead_NoValueProviderExtension()
+        {
+            string contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
+            string filePath = Path.Combine(contentItemPath, "body.mds");
+
+            await File.WriteAllTextAsync(filePath, "My Test Body");
+
+            _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
+            GitTrackingService.Stage(_initialTrackedItem);
+            GitRepo.Commit("My Second Commit", Email);
+
+            await GitTrackingService.Delete(_initialTrackedItem);
 
             var diff = await GitTrackingService.GetTrackedItemDiffs();
             Assert.NotEmpty(diff);
-            Assert.NotEmpty(diff.First().ValueProviderDiffs);
+            Assert.Empty(diff.First().ValueProviderDiffs);
         }
 
         [Fact]

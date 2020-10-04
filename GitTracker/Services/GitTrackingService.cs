@@ -240,7 +240,10 @@ namespace GitTracker.Services
                     trackedItemDiff.TrackedItemGitDiff = gitDiff;
                 }
 
-                foreach (var gitDiff in diffGrouping.Where(x => !x.Path.EndsWith(".json")))
+                var valueProviderDiffs =
+                    diffGrouping.Where(x => _valueProviders.Any(vp => vp.Extension.Equals(Path.GetExtension(x.Path))));
+
+                foreach (var gitDiff in valueProviderDiffs)
                 {
                     trackedItemDiff.ValueProviderDiffs.Add(gitDiff);
 
@@ -352,7 +355,10 @@ namespace GitTracker.Services
                         GetChangedProperties(trackedItemConflict.Ours, trackedItemConflict.Theirs);
                 }
 
-                foreach (var conflict in conflictGrouping.Where(x => !x.Ours.Path.EndsWith(".json")))
+                var valueProviderDiffs =
+                    conflictGrouping.Where(x => _valueProviders.Any(vp => vp.Extension.Equals(Path.GetExtension(x.Ours.Path))));
+
+                foreach (var conflict in valueProviderDiffs)
                 {
                     var fileContents =
                         _gitRepo.GetDiff3Files(conflict.Ours.Path, conflict.Theirs.Path, conflict.Ancestor?.Path);

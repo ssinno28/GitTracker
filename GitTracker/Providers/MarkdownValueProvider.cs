@@ -17,6 +17,8 @@ namespace GitTracker.Providers
             _pathProvider = pathProvider;
         }
 
+        public string Extension => ".md";
+
         public bool IsMatch(PropertyInfo propertyInfo)
         {
             return propertyInfo.GetCustomAttribute<MarkdownAttribute>() != null;
