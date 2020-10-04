@@ -214,7 +214,7 @@ namespace GitTracker.Tests
         }
 
         [Fact]
-        public async Task Test_Get_Diff_FromHead()
+        public async Task Test_Get_Diff_FromHead_Update()
         {
             _initialTrackedItem.SeoDescription = "My New Seo Description";
 
@@ -224,6 +224,43 @@ namespace GitTracker.Tests
             await File.WriteAllTextAsync(filePath, "My Test Body");
 
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
+
+            var diff = await GitTrackingService.GetTrackedItemDiffs();
+            Assert.NotEmpty(diff);
+            Assert.NotEmpty(diff.First().ValueProviderDiffs);
+        }        
+        
+        [Fact]
+        public async Task Test_Get_Diff_FromHead_WithValueProvider_Create()
+        {
+            var trackedItem = await GitTrackingService.Create(new BlogPost()
+            {
+                Name = "My New Blog Post"
+            });
+
+            string contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), trackedItem);
+            string filePath = Path.Combine(contentItemPath, "body.md");
+
+            await File.WriteAllTextAsync(filePath, "My Test Body");
+
+            var diff = await GitTrackingService.GetTrackedItemDiffs();
+            Assert.NotEmpty(diff);
+            Assert.NotEmpty(diff.First().ValueProviderDiffs);
+        }        
+        
+        [Fact]
+        public async Task Test_Get_Diff_FromHead_WithValueProvider_Delete()
+        {
+            string contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
+            string filePath = Path.Combine(contentItemPath, "body.md");
+
+            await File.WriteAllTextAsync(filePath, "My Test Body");
+
+            _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
+            GitTrackingService.Stage(_initialTrackedItem);
+            GitRepo.Commit("My Second Commit", Email);
+
+            await GitTrackingService.Delete(_initialTrackedItem);
 
             var diff = await GitTrackingService.GetTrackedItemDiffs();
             Assert.NotEmpty(diff);

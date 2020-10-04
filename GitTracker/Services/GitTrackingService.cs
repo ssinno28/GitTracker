@@ -76,8 +76,8 @@ namespace GitTracker.Services
             await PerformOpsBasedOnDiff(diff, currentCommitId);
 
             return true;
-        }        
-        
+        }
+
         public async Task<bool> CreateBranch(string branchName)
         {
             var diffFromHead = _gitRepo.GetDiffFromHead();
@@ -89,8 +89,8 @@ namespace GitTracker.Services
             _gitRepo.CreateBranch(branchName);
 
             return true;
-        }        
-        
+        }
+
         //public async Task<bool> Stash(string message, string email, string userName, params TrackedItem[] trackedItems)
         //{
         //    foreach (var trackedItem in trackedItems)
@@ -244,10 +244,27 @@ namespace GitTracker.Services
                 {
                     trackedItemDiff.ValueProviderDiffs.Add(gitDiff);
 
-                    var propertyInfo = GetValueProviderProperty(trackedItemDiff.Initial.GetType(), gitDiff.Path);
+                    Type trackedItemType;
+                    switch (gitDiff.ChangeKind)
+                    {
+                        case ChangeKind.Deleted:
+                            trackedItemType = trackedItemDiff.Initial.GetType();
+                            break;
+                        default:
+                            trackedItemType = trackedItemDiff.Final.GetType();
+                            break;
+                    }
 
-                    propertyInfo.SetValue(trackedItemDiff.Initial, gitDiff.InitialFileContent);
-                    propertyInfo.SetValue(trackedItemDiff.Final, gitDiff.FinalFileContent);
+                    var propertyInfo = GetValueProviderProperty(trackedItemType, gitDiff.Path);
+                    if (trackedItemDiff.Initial != null)
+                    {
+                        propertyInfo.SetValue(trackedItemDiff.Initial, gitDiff.InitialFileContent);
+                    }
+
+                    if (trackedItemDiff.Final != null)
+                    {
+                        propertyInfo.SetValue(trackedItemDiff.Final, gitDiff.FinalFileContent);
+                    }
                 }
 
                 trackedItemDiff.ChangedProperties = GetChangedProperties(trackedItemDiff.Initial, trackedItemDiff.Final);
