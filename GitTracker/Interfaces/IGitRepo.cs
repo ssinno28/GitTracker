@@ -31,5 +31,10 @@ namespace GitTracker.Interfaces
         string GetFileFromCommit(string commitId, string path);
         RevertStatus RevertCommit(string commitId, string email, string userName = null);
         IList<GitDiff> GetDiffBetweenBranches(string id, string endId);
+        IList<GitDiff> GetDiffForStash(string id);
+        bool MergeBranch(string branchName, string email, CheckoutFileConflictStrategy strategy,
+            string userName = null);
+
+        // string Stash(string message, string email, string userName = null);
     }
 }

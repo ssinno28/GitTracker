@@ -10,7 +10,8 @@ namespace GitTracker.Interfaces
     {
         /// <summary>
         /// Will perform a pull request to get all new changes from the remote. Once the changes are pulled git diff is called to see
-        /// what has been added, deleted or modified and will call the appropriate CRUD operation to update your content.
+        /// what has been added, deleted or modified and will call the appropriate CRUD operation to update your content. Returns false
+        /// if there are conflicts.
         /// </summary>
         /// <param name="email"></param>
         /// <param name="strategy"></param>
@@ -19,11 +20,39 @@ namespace GitTracker.Interfaces
         Task<bool> Sync(string email, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null);
 
         /// <summary>
+        /// Merges the branch specified into the current branch. Returns false if there are conflicts.
+        /// </summary>
+        /// <param name="branchName"></param>
+        /// <param name="email"></param>
+        /// <param name="strategy"></param>
+        /// <param name="userName"></param>
+        /// <returns></returns>
+        Task<bool> MergeBranch(string branchName, string email,
+            CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null);
+
+        /// <summary>
+        /// Stashing changes for the specified tracked items
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="email"></param>
+        /// <param name="userName"></param>
+        /// <param name="trackedItems"></param>
+        /// <returns></returns>
+        // Task<bool> Stash(string message, string email, string userName, params TrackedItem[] trackedItems);
+
+        /// <summary>
         /// Switches to the branch specified and peforms any update/delete/create operations based on diff between branches
         /// </summary>
         /// <param name="branchName"></param>
         /// <returns></returns>
         Task<bool> SwitchBranch(string branchName);
+
+        /// <summary>
+        /// Creates a branch with the specified name and checks it out.
+        /// </summary>
+        /// <param name="branchName"></param>
+        /// <returns></returns>
+        Task<bool> CreateBranch(string branchName);
 
         /// <summary>
         /// Will create an entity based on a json string that is passed in. It derives the Type from the TypeDefiniton field in the json.

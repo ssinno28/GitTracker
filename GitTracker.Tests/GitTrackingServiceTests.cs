@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -138,6 +137,41 @@ namespace GitTracker.Tests
             var conflicts = await GitTrackingService.GetTrackedItemConflicts();
             Assert.Equal(1, conflicts.Count);
             Assert.Equal(2, conflicts.First().ChangedProperties.Count);
+        }        
+        
+        [Fact]
+        public async Task Test_Merge_On_Repo_Merge_Conflict()
+        {
+            await GitTrackingService.CreateBranch("test-branch");
+
+            _initialTrackedItem.SeoDescription = "My Test Seo Description";
+            _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
+
+            GitTrackingService.Stage(_initialTrackedItem);
+            GitRepo.Commit("Test Branch Second Commit", Email);
+
+            await GitTrackingService.SwitchBranch("master");
+
+            _initialTrackedItem.SeoDescription = "My Test Seo Description 2";
+            _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
+            GitTrackingService.Stage(_initialTrackedItem);
+            GitRepo.Commit("Master Branch Second Commit", Email);
+
+            bool failedMerge = await GitTrackingService.MergeBranch("test-branch", Email);
+            Assert.False(failedMerge);
+
+            var conflicts = await GitTrackingService.GetTrackedItemConflicts();
+            Assert.Equal(1, conflicts.Count);
+            Assert.Equal(2, conflicts.First().ChangedProperties.Count);
+
+            // take ours and merge
+            var conflict = conflicts.First();
+            await GitTrackingService.Update(conflict.Ours);
+            GitTrackingService.Stage(conflict.Ours);
+            GitRepo.Commit("Fixing Merge Conflict", Email);
+
+            bool successfulMerge = await GitTrackingService.MergeBranch("test-branch", Email);
+            Assert.True(successfulMerge);
         }
 
         [Fact]
@@ -224,8 +258,7 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Switch_Branch()
         {
-            GitRepo.CreateBranch("test-branch");
-            await GitRepo.ChangeBranch("test-branch");
+            await GitTrackingService.CreateBranch("test-branch");
 
             await GitTrackingService.Delete(_initialTrackedItem);
             bool staged = GitTrackingService.Stage(_initialTrackedItem);
@@ -244,12 +277,35 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Switch_Branch_Fails()
         {
-            GitRepo.CreateBranch("test-branch");
-            await GitRepo.ChangeBranch("test-branch");
-
+            await GitTrackingService.CreateBranch("test-branch");
             await GitTrackingService.Delete(_initialTrackedItem);
 
             await Assert.ThrowsAnyAsync<Exception>(async () => await GitTrackingService.SwitchBranch("master"));
+        }              
+        
+        [Fact]
+        public async Task Test_Create_Branch_Fails()
+        {
+            await GitTrackingService.Delete(_initialTrackedItem);
+
+            await Assert.ThrowsAnyAsync<Exception>(async () => await GitTrackingService.Create("test-branch"));
+        }           
+        
+        //[Fact]
+        //public async Task Test_Stash()
+        //{
+        //    await GitTrackingService.Delete(_initialTrackedItem);
+        //    var result = await GitTrackingService.Stash("My stash", Email, Email, _initialTrackedItem);
+
+        //    Assert.True(result);
+        //    Assert.True(Directory.Exists(PathProvider.GetTrackedItemPath(_initialTrackedItem.GetType(), _initialTrackedItem)));
+        //}        
+        
+        [Fact]
+        public async Task Test_Sync_Fails()
+        {
+            await GitTrackingService.Delete(_initialTrackedItem);
+            await Assert.ThrowsAnyAsync<Exception>(async () => await GitTrackingService.Sync(Email));
         }
 
         public async Task InitializeAsync()

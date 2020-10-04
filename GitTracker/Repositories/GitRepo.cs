@@ -118,8 +118,10 @@ namespace GitTracker.Repositories
             string fileContents = null;
             using (var repo = LocalRepo)
             {
+                var commits = repo.Branches.SelectMany(x => x.Commits).ToList();
+                commits.AddRange(repo.Stashes.Select(x => x.Index));
                 var ourCommit =
-                    repo.Branches.SelectMany(x => x.Commits).First(x => x.Id.ToString().Equals(commitId));
+                    commits.First(x => x.Id.ToString().Equals(commitId));
 
                 try
                 {
@@ -211,6 +213,48 @@ namespace GitTracker.Repositories
                 var baseCommit = repo.ObjectDatabase.FindMergeBase(aCommit, bCommit);
                 return baseCommit != null ? baseCommit.Sha : null;
             }
+        }
+
+        public bool MergeBranch(string branchName, string email, CheckoutFileConflictStrategy strategy, string userName = null)
+        {
+            MergeStatus status;
+            using (var repo = LocalRepo)
+            {
+                var branchToMerge = repo.Branches.First(x => x.FriendlyName.Equals(branchName));
+
+                var signature = new Signature(
+                    new Identity(userName ?? email, email), DateTimeOffset.Now);
+
+                var mergeOptions = new MergeOptions
+                {
+                    FastForwardStrategy = FastForwardStrategy.Default,
+                    FileConflictStrategy = strategy
+                };
+
+                var mergeResult = repo.Merge(branchToMerge, signature, mergeOptions);
+                status = mergeResult.Status;
+
+                // if merge strategy is theirs or ours then we stage and commit for them
+                if (repo.Index.Conflicts.Any() && (strategy == CheckoutFileConflictStrategy.Theirs || strategy == CheckoutFileConflictStrategy.Ours))
+                {
+                    string commitMsg = GetMergeCommitMessage(repo.Index.Conflicts);
+                    foreach (var indexConflict in repo.Index.Conflicts)
+                    {
+                        Commands.Stage(repo,
+                            strategy == CheckoutFileConflictStrategy.Theirs
+                                ? indexConflict.Theirs.Path
+                                : indexConflict.Ours.Path);
+                    }
+
+                    Commit(commitMsg, email);
+                }
+                else if (repo.Index.Conflicts.Any())
+                {
+                    return false;
+                }
+            }
+
+            return status != MergeStatus.Conflicts;
         }
 
         public IList<Conflict> GetMergeConflicts()
@@ -417,7 +461,48 @@ namespace GitTracker.Repositories
 
                 Commands.Checkout(repo, newBranch);
             }
-        }
+        }        
+        
+        //public string Stash(string message, string email, string userName = null)
+        //{
+        //    string commitId;
+        //    using (var repo = LocalRepo)
+        //    {
+        //        var signature = new Signature(
+        //            new Identity(userName ?? email, email), DateTimeOffset.Now);
+
+        //        try
+        //        {
+        //          var stash = repo.Stashes.Add(signature, message, StashModifiers.IncludeUntracked);
+        //          commitId = stash.Index.Id.ToString();
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            _logger.LogError(ex, $"Could not stash changes for message {message}");
+        //            return null;
+        //        }
+        //    }
+
+        //    return commitId;
+        //}        
+        
+        //public StashApplyStatus ApplyStash(int index)
+        //{
+        //    using (var repo = LocalRepo)
+        //    {
+        //        try
+        //        {
+        //          var status = repo.Stashes.Apply(index);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            _logger.LogError(ex, $"Could not apply stash for index {index}");
+        //            return StashApplyStatus.NotFound;
+        //        }
+        //    }
+
+        //    return status;
+        //}
 
         public IList<string> GetUnstagedItems()
         {
@@ -638,6 +723,35 @@ namespace GitTracker.Repositories
             }
 
             return GetGitDiffs(patchEntryChanges, endId, id);
+        }        
+        
+        public IList<GitDiff> GetDiffForStash(string id)
+        {
+            IList<PatchEntryChanges> patchEntryChanges = new List<PatchEntryChanges>();
+            using (var repo = LocalRepo)
+            {
+                List<Commit> commitList = repo.Commits.ToList();
+                Stash stash = repo.Stashes.First(x => x.Index.Id.ToString().Equals(id));
+                commitList.Add(stash.Index);
+                commitList.Add(null); // Added to show correct initial add
+
+                var commitToView = commitList.First(x => x.Id.ToString().Equals(id));
+                int indexOfCommit = commitList.IndexOf(commitToView);
+
+                var endCommit = commitList.First(x => x.Id.ToString().Equals(GetCurrentCommitId()));
+                var indexOfEndCommit = commitList.IndexOf(endCommit);
+                var repoDifferences = repo.Diff.Compare<Patch>((Equals(commitList[indexOfCommit], null))
+                    ? null
+                    : commitList[indexOfCommit].Tree, (Equals(commitList[indexOfEndCommit], null)) ? null : commitList[indexOfEndCommit].Tree);
+
+                try
+                {
+                    patchEntryChanges = repoDifferences.ToList();
+                }
+                catch { } // If the file has been renamed in the past- this search will fail
+            }
+
+            return GetGitDiffs(patchEntryChanges, id, GetCurrentCommitId());
         }
 
         public IList<GitDiff> GetDiffFromHead()

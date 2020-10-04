@@ -111,6 +111,7 @@ When performing any of these operations you will always want to use the IGitTrac
 
 ```c#
 await _gitTrackingService.SwitchBranch("master");
+await _gitTrackingService.CreateBranch("test-branch");
 await _gitTrackingService.Publish(email);
 await _gitTrackingService.Sync(email);
 ```
@@ -171,7 +172,7 @@ var diff = await gitTrackingService.GetTrackedItemDiffs(gitRepo.GetCurrentCommit
 
  
 
-## Getting Merge Conflicts
+## Merge Conflicts
 
 If the repository is currently in a state of conflict, then calling `gitTrackingService.GetTrackedItemConflicts()` will return a list of `TrackedItemConflict`. 
 
@@ -189,4 +190,22 @@ If the repository is currently in a state of conflict, then calling `gitTracking
 ```
 
 This will return a list of all the properties that were changed as well as deserialize the tracked item for the base, local and remote into objects. It also returns a list of `ValueProviderConflicts`, which simply has the paths to the BASE, LOCAL and REMOTE version of the files so you can use an external merge tool to to resolve the conflict. 
+
+In order to solve the merge conflict you then just have to update the tracked item and stage the changes.
+
+```c#
+    bool failedMerge = await GitTrackingService.MergeBranch("test-branch", Email);
+
+    var conflicts = await GitTrackingService.GetTrackedItemConflicts();            
+
+    // take ours and merge
+    var conflict = conflicts.First();
+    await gitTrackingService.Update(conflict.Ours);
+    gitTrackingService.Stage(conflict.Ours);
+    gitRepo.Commit("Fixing Merge Conflict", Email);
+
+    bool successfulMerge = await gitTrackingService.MergeBranch("test-branch", Email);
+```
+
+
 

@@ -76,10 +76,65 @@ namespace GitTracker.Services
             await PerformOpsBasedOnDiff(diff, currentCommitId);
 
             return true;
+        }        
+        
+        public async Task<bool> CreateBranch(string branchName)
+        {
+            var diffFromHead = _gitRepo.GetDiffFromHead();
+            if (diffFromHead.Any())
+            {
+                throw new Exception("Can not create branch when you have pending changes!");
+            }
+
+            _gitRepo.CreateBranch(branchName);
+
+            return true;
+        }        
+        
+        //public async Task<bool> Stash(string message, string email, string userName, params TrackedItem[] trackedItems)
+        //{
+        //    foreach (var trackedItem in trackedItems)
+        //    {
+        //        Stage(trackedItem);
+        //    }
+
+        //    string commitId = _gitRepo.Stash(message, email, userName);
+        //    if (string.IsNullOrEmpty(commitId)) return false;
+
+        //    var diff = _gitRepo.GetDiffForStash(commitId);
+        //    await PerformOpsBasedOnDiff(diff, string.Empty);
+
+        //    return true;
+        //}
+
+        public async Task<bool> MergeBranch(string branchName, string email,
+            CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)
+        {
+            var diffFromHead = _gitRepo.GetDiffFromHead();
+            if (diffFromHead.Any())
+            {
+                throw new Exception("Can not merge branch when you have pending changes!");
+            }
+
+            string currentCommitId = _gitRepo.GetCurrentCommitId();
+            if (!_gitRepo.MergeBranch(branchName, email, strategy, userName)) return false;
+
+            string newCommitId = _gitRepo.GetCurrentCommitId();
+
+            var diff = _gitRepo.GetDiffBetweenBranches(currentCommitId, newCommitId);
+            await PerformOpsBasedOnDiff(diff, currentCommitId);
+
+            return true;
         }
 
         public async Task<bool> Sync(string email, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)
         {
+            var diffFromHead = _gitRepo.GetDiffFromHead();
+            if (diffFromHead.Any())
+            {
+                throw new Exception("Can not sync when you have pending changes!");
+            }
+
             // if this is the first pull then no need to check the diff
             var commits = _gitRepo.GetCommits();
             if (!commits.Any())
