@@ -759,6 +759,8 @@ namespace GitTracker.Repositories
             IList<PatchEntryChanges> patchEntryChanges = new List<PatchEntryChanges>();
             using (var repo = LocalRepo)
             {
+                if(repo.Head.Tip == null) return new List<GitDiff>();
+
                 var repoDifferences = repo.Diff.Compare<Patch>(repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory);
 
                 try { patchEntryChanges = repoDifferences.ToList(); }
