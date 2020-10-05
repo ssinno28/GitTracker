@@ -129,6 +129,11 @@ namespace GitTracker.Services
 
         public async Task<bool> Sync(string email, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)
         {
+            if (!Directory.Exists(_gitConfig.LocalPath) || !Repository.IsValid(_gitConfig.LocalPath))
+            {
+                Repository.Init(_gitConfig.LocalPath);
+            }
+
             var diffFromHead = _gitRepo.GetDiffFromHead();
             if (diffFromHead.Any())
             {
