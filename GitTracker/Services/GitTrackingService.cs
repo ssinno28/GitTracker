@@ -177,28 +177,56 @@ namespace GitTracker.Services
 
         private async Task PerformOpsBasedOnDiff(IList<GitDiff> diff, string currentCommitId)
         {
-            foreach (var gitDiff in diff.Where(x => x.Path.EndsWith(".json")))
+            foreach (var diffGrouping in diff.GroupBy(x => Path.GetDirectoryName(x.Path)))
             {
-                //if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
-                //{
-                //    continue; 
-                //}
+                TrackedItem trackedItem = null;
+                ChangeKind changeKind = ChangeKind.Unmodified;
+                foreach (var gitDiff in diff.Where(x => x.Path.EndsWith(".json")))
+                {
+                    //if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
+                    //{
+                    //    continue; 
+                    //}
 
-                switch (gitDiff.ChangeKind)
+                    switch (gitDiff.ChangeKind)
+                    {
+                        case ChangeKind.Added:
+                            trackedItem = await GetTrackedItem(gitDiff.Path);
+                            changeKind = ChangeKind.Added;
+                            break;
+                        case ChangeKind.Deleted:
+                            string fileContents = _gitRepo.GetFileFromCommit(currentCommitId, gitDiff.Path);
+                            trackedItem = await DeserializeContentItem(fileContents);
+
+                            changeKind = ChangeKind.Deleted;
+                            break;
+                        case ChangeKind.Modified:
+                            trackedItem = await GetTrackedItem(gitDiff.Path);
+                            changeKind = ChangeKind.Modified;
+                            break;
+                    }
+                }
+
+                var valueProviderDiffs =
+                    diffGrouping.Where(x => _valueProviders.Any(vp => vp.Extension.Equals(Path.GetExtension(x.Path))));
+
+                foreach (var gitDiff in valueProviderDiffs)
+                {
+                    Type trackedItemType = trackedItem.GetType();
+                    var propertyInfo = GetValueProviderProperty(trackedItemType, gitDiff.Path);
+                    propertyInfo.SetValue(trackedItem, gitDiff.FinalFileContent);
+                }
+
+                switch (changeKind)
                 {
                     case ChangeKind.Added:
-                        var addedItem = await GetTrackedItem(gitDiff.Path);
-                        await PerformCreate(addedItem);
+                        await PerformCreate(trackedItem);
                         break;
                     case ChangeKind.Deleted:
-                        string fileContents = _gitRepo.GetFileFromCommit(currentCommitId, gitDiff.Path);
-                        var deletedItem = await DeserializeContentItem(fileContents);
-
-                        await PerformDelete(deletedItem);
+                        await PerformDelete(trackedItem);
                         break;
                     case ChangeKind.Modified:
-                        var modifiedItem = await GetTrackedItem(gitDiff.Path);
-                        await PerformUpdate(modifiedItem);
+                        await PerformUpdate(trackedItem);
                         break;
                 }
             }
