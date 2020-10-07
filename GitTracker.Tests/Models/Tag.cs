@@ -1,8 +1,10 @@
+using GitTracker.Helpers;
+using GitTracker.Models;
+
 namespace GitTracker.Tests.Models
 {
-    public class Tag
+    public class Tag : TrackedItem
     {
-        public string Id { get; set; }
-        public string Name { get; set; }
+        public string SafeName => Name.MakeUrlFriendly();
     }
 }

@@ -10,6 +10,7 @@ using GitTracker.Interfaces;
 using GitTracker.Models;
 using GitTracker.Serializer;
 using LibGit2Sharp;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using IValueProvider = GitTracker.Interfaces.IValueProvider;
@@ -27,6 +28,7 @@ namespace GitTracker.Services
         private readonly IEnumerable<ICreateOperation> _createOperations;
         private readonly IEnumerable<IDeleteOperation> _deleteOperations;
         private readonly GitConfig _gitConfig;
+        private readonly ILogger<GitTrackingService> _logger;
 
         public GitTrackingService(
             ContentContractResolver contentContractResolver,
@@ -37,7 +39,8 @@ namespace GitTracker.Services
             IEnumerable<IUpdateOperation> updateOperations,
             IEnumerable<ICreateOperation> createOperations,
             IEnumerable<IDeleteOperation> deleteOperations,
-            GitConfig gitConfig)
+            GitConfig gitConfig,
+            ILoggerFactory loggerFactory)
         {
             _contentContractResolver = contentContractResolver;
             _valueProviders = valueProviders;
@@ -48,6 +51,7 @@ namespace GitTracker.Services
             _createOperations = createOperations;
             _deleteOperations = deleteOperations;
             _gitConfig = gitConfig;
+            _logger = loggerFactory.CreateLogger<GitTrackingService>();
         }
 
         public async Task<bool> Publish(string email,
@@ -73,8 +77,8 @@ namespace GitTracker.Services
             string newCommitId = _gitRepo.GetCurrentCommitId();
 
             var diff = _gitRepo.GetDiffBetweenBranches(currentCommitId, newCommitId);
-            await PerformOpsBasedOnDiff(diff, currentCommitId);
 
+            await PerformOpsBasedOnDiff(diff, currentCommitId);
             return true;
         }
 
@@ -165,6 +169,7 @@ namespace GitTracker.Services
 
             // get diff from both
             var diff = _gitRepo.GetDiff(new List<string>(), currentCommitId, newCommitId);
+
             await PerformOpsBasedOnDiff(diff, currentCommitId);
 
             return true;
@@ -172,8 +177,13 @@ namespace GitTracker.Services
 
         private async Task PerformOpsBasedOnDiff(IList<GitDiff> diff, string currentCommitId)
         {
-            foreach (var gitDiff in diff)
+            foreach (var gitDiff in diff.Where(x => x.Path.EndsWith(".json")))
             {
+                //if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
+                //{
+                //    continue; 
+                //}
+
                 switch (gitDiff.ChangeKind)
                 {
                     case ChangeKind.Added:
@@ -239,6 +249,11 @@ namespace GitTracker.Services
 
                 foreach (var gitDiff in diffGrouping.Where(x => x.Path.EndsWith(".json")))
                 {
+                    //if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
+                    //{
+                    //    continue;
+                    //}
+
                     trackedItemDiff.Initial = await DeserializeContentItem(gitDiff.InitialFileContent);
                     trackedItemDiff.Final = await DeserializeContentItem(gitDiff.FinalFileContent);
 

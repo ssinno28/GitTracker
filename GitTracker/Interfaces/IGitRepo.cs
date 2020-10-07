@@ -14,7 +14,7 @@ namespace GitTracker.Interfaces
         bool Unstage(params string[] filePaths);
         bool Pull(string email, CheckoutFileConflictStrategy strategy, string username = null);
         bool Push(string email, string username = null);
-        bool Reset(ResetMode resetMode);
+        bool Reset(ResetMode resetMode, string commitId = null);
         List<GitCommit> GetCommits(int page = 1, int take = 10, IList<string> paths = null);
         int Count(string path);
         IList<GitDiff> GetDiff(IList<string> paths, string id, string endId = null);

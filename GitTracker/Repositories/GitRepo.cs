@@ -461,8 +461,8 @@ namespace GitTracker.Repositories
 
                 Commands.Checkout(repo, newBranch);
             }
-        }        
-        
+        }
+
         //public string Stash(string message, string email, string userName = null)
         //{
         //    string commitId;
@@ -485,7 +485,7 @@ namespace GitTracker.Repositories
 
         //    return commitId;
         //}        
-        
+
         //public StashApplyStatus ApplyStash(int index)
         //{
         //    using (var repo = LocalRepo)
@@ -723,8 +723,8 @@ namespace GitTracker.Repositories
             }
 
             return GetGitDiffs(patchEntryChanges, endId, id);
-        }        
-        
+        }
+
         public IList<GitDiff> GetDiffForStash(string id)
         {
             IList<PatchEntryChanges> patchEntryChanges = new List<PatchEntryChanges>();
@@ -759,7 +759,7 @@ namespace GitTracker.Repositories
             IList<PatchEntryChanges> patchEntryChanges = new List<PatchEntryChanges>();
             using (var repo = LocalRepo)
             {
-                if(repo.Head.Tip == null) return new List<GitDiff>();
+                if (repo.Head.Tip == null) return new List<GitDiff>();
 
                 var repoDifferences = repo.Diff.Compare<Patch>(repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory);
 
@@ -929,13 +929,20 @@ namespace GitTracker.Repositories
             return true;
         }
 
-        public bool Reset(ResetMode resetMode)
+        public bool Reset(ResetMode resetMode, string commitId = null)
         {
             using (var repo = LocalRepo)
             {
                 try
                 {
-                    repo.Reset(resetMode);
+                    if (!string.IsNullOrEmpty(commitId))
+                    {
+                        repo.Reset(resetMode, commitId);
+                    }
+                    else
+                    {
+                        repo.Reset(resetMode);
+                    }
                 }
                 catch (Exception ex)
                 {
