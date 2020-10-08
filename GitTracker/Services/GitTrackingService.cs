@@ -360,6 +360,11 @@ namespace GitTracker.Services
 
                 foreach (var conflict in conflictGrouping.Where(x => x.Ours.Path.EndsWith(".json")))
                 {
+                    //if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
+                    //{
+                    //    continue;
+                    //}
+
                     var fileContents =
                         _gitRepo.GetDiff3Files(conflict.Ours.Path, conflict.Theirs.Path, conflict.Ancestor?.Path);
 
