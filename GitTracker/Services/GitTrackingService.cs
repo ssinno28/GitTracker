@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -295,6 +294,42 @@ namespace GitTracker.Services
             }
 
             return trackedItemDiffs;
+        }
+
+        public TrackedItemHistory GetHistory(TrackedItem trackedItem, int page = 1, int pageSize = 10)
+        {
+            var history = new TrackedItemHistory();
+
+            var relativeTrackedItemPath =
+                _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
+
+            history.Commits = _gitRepo.GetCommits(page, pageSize, new List<string> { relativeTrackedItemPath });
+            history.Count = _gitRepo.Count(relativeTrackedItemPath);
+
+            return history;
+        }        
+        
+        public TrackedItemHistory GetHistory(Type trackedItemType, int page = 1, int pageSize = 10)
+        {
+            var history = new TrackedItemHistory();
+
+            var relativeTrackedItemPath =
+                _pathProvider.GetRelativeTrackedItemPath(trackedItemType);
+
+            history.Commits = _gitRepo.GetCommits(page, pageSize, new List<string> { relativeTrackedItemPath });
+            history.Count = _gitRepo.Count(relativeTrackedItemPath);
+
+            return history;
+        }
+
+        public TrackedItemHistory GetHistory(int page = 1, int pageSize = 10)
+        {
+            var history = new TrackedItemHistory();
+
+            history.Commits = _gitRepo.GetCommits(page, pageSize);
+            history.Count = _gitRepo.Count(string.Empty);
+
+            return history;
         }
 
         private IList<PropertyInfo> GetChangedProperties(TrackedItem ours, TrackedItem theirs)

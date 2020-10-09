@@ -33,6 +33,29 @@ namespace GitTracker.Tests
                     {
                         Name = "Test Blog Post"
                     }));
+        }        
+        
+        [Fact]
+        public async Task Test_Get_History_For_TrackedItem()
+        {
+            var commits = GitTrackingService.GetHistory(_initialTrackedItem);
+            Assert.Equal("My First Commit\n", commits.Commits.First().Message);
+        }        
+        
+        [Fact]
+        public async Task Test_Get_History_For_TrackedItemType()
+        {
+            var trackedBlogPost =
+                await GitTrackingService.Create(new BlogPost()
+                {
+                    Name = "My second blog post"
+                });
+
+            GitTrackingService.Stage(trackedBlogPost);
+            GitRepo.Commit("My Second Commit", Email);
+
+            var commits = GitTrackingService.GetHistory(typeof(BlogPost));
+            Assert.Equal(2, commits.Count);
         }
 
         [Fact]

@@ -192,5 +192,9 @@ namespace GitTracker.Interfaces
         /// <returns></returns>
         Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(TrackedItem trackedItem,
             string currentCommitId = null, string newCommitId = null);
+
+        TrackedItemHistory GetHistory(TrackedItem trackedItem, int page = 1, int pageSize = 10);
+        TrackedItemHistory GetHistory(Type trackedItemType, int page = 1, int pageSize = 10);
+        TrackedItemHistory GetHistory(int page = 1, int pageSize = 10);
     }
 }
