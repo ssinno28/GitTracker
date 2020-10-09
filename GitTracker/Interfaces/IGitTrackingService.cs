@@ -193,8 +193,30 @@ namespace GitTracker.Interfaces
         Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(TrackedItem trackedItem,
             string currentCommitId = null, string newCommitId = null);
 
+        /// <summary>
+        /// Gets paged commits for a specified tracked item
+        /// </summary>
+        /// <param name="trackedItem"></param>
+        /// <param name="page"></param>
+        /// <param name="pageSize"></param>
+        /// <returns></returns>
         TrackedItemHistory GetHistory(TrackedItem trackedItem, int page = 1, int pageSize = 10);
+
+        /// <summary>
+        /// Gets paged commits for a TrackedItem Type
+        /// </summary>
+        /// <param name="trackedItemType"></param>
+        /// <param name="page"></param>
+        /// <param name="pageSize"></param>
+        /// <returns></returns>
         TrackedItemHistory GetHistory(Type trackedItemType, int page = 1, int pageSize = 10);
+
+        /// <summary>
+        /// Gets paged commits for the entire repo
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="pageSize"></param>
+        /// <returns></returns>
         TrackedItemHistory GetHistory(int page = 1, int pageSize = 10);
     }
 }
