@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
 using GitTracker.Tests.Models;
 using LibGit2Sharp;
 using Xunit;
@@ -33,15 +34,39 @@ namespace GitTracker.Tests
                     {
                         Name = "Test Blog Post"
                     }));
-        }        
-        
+        }
+
         [Fact]
         public async Task Test_Get_History_For_TrackedItem()
         {
             var commits = GitTrackingService.GetHistory(_initialTrackedItem);
             Assert.Equal("My First Commit\n", commits.Commits.First().Message);
-        }        
-        
+        }
+
+        [Fact]
+        public async Task Test_Change_Name()
+        {
+            var previousPath =
+                PathProvider.GetRelativeTrackedItemPath(_initialTrackedItem.GetType(), _initialTrackedItem);
+            var blogPost = await GitTrackingService.ChangeName("Changed Name", _initialTrackedItem);
+
+            var newPath =
+                PathProvider.GetRelativeTrackedItemPath(blogPost.GetType(), blogPost);
+
+            Assert.Contains(previousPath, blogPost.PreviousPaths);
+            Assert.Equal("BlogPost/changed-name", newPath);
+
+            string fullPathToFile = Path.Combine(GitConfig.LocalPath, "BlogPost", "changed-name", $"{blogPost.Id}.json");
+            Assert.True(File.Exists(fullPathToFile));
+        }
+
+        [Fact]
+        public async Task Test_Change_Name_Fail()
+        {
+            await Assert.ThrowsAnyAsync<Exception>(async () =>
+                await GitTrackingService.ChangeName("Test Blog Post", _initialTrackedItem));
+        }
+
         [Fact]
         public async Task Test_Get_History_For_TrackedItemType()
         {
@@ -161,8 +186,8 @@ namespace GitTracker.Tests
             var conflicts = await GitTrackingService.GetTrackedItemConflicts();
             Assert.Equal(1, conflicts.Count);
             Assert.Equal(2, conflicts.First().ChangedProperties.Count);
-        }        
-        
+        }
+
         [Fact]
         public async Task Test_Merge_On_Repo_Merge_Conflict()
         {
@@ -235,8 +260,8 @@ namespace GitTracker.Tests
             Assert.Equal(1, conflicts.Count);
             Assert.Equal(2, conflicts.First().ChangedProperties.Count);
             Assert.Equal(1, conflicts.First().ValueProviderConflicts.Count);
-        }        
-        
+        }
+
         [Fact]
         public async Task Test_Sync_On_Repo_Merge_Conflict_Take_Normal_No_Value_Provider()
         {
@@ -291,8 +316,8 @@ namespace GitTracker.Tests
             var diff = await GitTrackingService.GetTrackedItemDiffs();
             Assert.NotEmpty(diff);
             Assert.NotEmpty(diff.First().ValueProviderDiffs);
-        }        
-        
+        }
+
         [Fact]
         public async Task Test_Get_Diff_FromHead_WithValueProvider_Create()
         {
@@ -333,7 +358,7 @@ namespace GitTracker.Tests
         //    Assert.NotEmpty(diff);
         //    Assert.NotEmpty(diff.First().ValueProviderDiffs);
         //}     
-        
+
         [Fact]
         public async Task Test_Get_Diff_FromHead_NoValueProviderExtension()
         {
@@ -395,8 +420,8 @@ namespace GitTracker.Tests
 
             bool switchBackResult = await GitTrackingService.SwitchBranch("test-branch");
             Assert.True(switchBackResult);
-        }        
-        
+        }
+
         [Fact]
         public async Task Test_Switch_Branch_Fails()
         {
@@ -404,16 +429,16 @@ namespace GitTracker.Tests
             await GitTrackingService.Delete(_initialTrackedItem);
 
             await Assert.ThrowsAnyAsync<Exception>(async () => await GitTrackingService.SwitchBranch("master"));
-        }              
-        
+        }
+
         [Fact]
         public async Task Test_Create_Branch_Fails()
         {
             await GitTrackingService.Delete(_initialTrackedItem);
 
             await Assert.ThrowsAnyAsync<Exception>(async () => await GitTrackingService.Create("test-branch"));
-        }           
-        
+        }
+
         //[Fact]
         //public async Task Test_Stash()
         //{
@@ -423,7 +448,7 @@ namespace GitTracker.Tests
         //    Assert.True(result);
         //    Assert.True(Directory.Exists(PathProvider.GetTrackedItemPath(_initialTrackedItem.GetType(), _initialTrackedItem)));
         //}        
-        
+
         [Fact]
         public async Task Test_Sync_Fails()
         {

@@ -580,11 +580,11 @@ namespace GitTracker.Services
 
         public async Task<TrackedItem> ChangeName(string newName, TrackedItem trackedItem)
         {
-            trackedItem.Name = newName;
-            CheckNameExists(trackedItem.GetType(), trackedItem);
-
+            // make sure we add the previous path before changing the name!
             trackedItem.PreviousPaths.Add(_pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem));
+
             await _fileProvider.MoveFile(newName, trackedItem);
+
             await _fileProvider.UpsertFiles(trackedItem);
             await PerformUpdate(trackedItem);
 

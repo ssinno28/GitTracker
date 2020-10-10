@@ -19,8 +19,8 @@ namespace GitTracker.Providers
         private readonly ILogger<FileProvider> _logger;
 
         public FileProvider(
-            GitConfig gitConfig, 
-            IPathProvider pathProvider, 
+            GitConfig gitConfig,
+            IPathProvider pathProvider,
             ContentContractResolver contentContractResolver,
             ILoggerFactory loggerFactory)
         {
@@ -45,7 +45,7 @@ namespace GitTracker.Providers
                 string contentTypeFolderPath = $"{_gitConfig.LocalPath}\\{contentType.Name}";
                 if (!Directory.Exists(contentTypeFolderPath)) continue;
 
-                var paths = 
+                var paths =
                     Directory.GetFiles(contentTypeFolderPath, "*.json", SearchOption.AllDirectories)
                         .ToList();
 
@@ -117,26 +117,23 @@ namespace GitTracker.Providers
         {
             return await Task.Run(() =>
             {
-                try
+                var currentContentItemPath = _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
+                trackedItem.Name = newName;
+
+                var newContentItemPath = _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
+                if (Directory.Exists(newContentItemPath))
                 {
-                    var currentContentItemPath = _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
-                    trackedItem.Name = newName;
-
-                    var newContentItemPath = _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
-                    Directory.CreateDirectory(newContentItemPath);
-
-                    foreach (var file in Directory.GetFiles(currentContentItemPath))
-                    {
-                        File.Move(file, Path.Combine(newContentItemPath, Path.GetFileName(file)));
-                    }
-
-                    Directory.Delete(currentContentItemPath);
+                    throw new Exception($"The name {newName} already exists!");
                 }
-                catch (Exception ex)
+
+                Directory.CreateDirectory(newContentItemPath);
+
+                foreach (var file in Directory.GetFiles(currentContentItemPath))
                 {
-                    _logger.LogError("Could not move content item {0}, error {1}", trackedItem.Id, ex);
-                    return false;
+                    File.Move(file, Path.Combine(newContentItemPath, Path.GetFileName(file)));
                 }
+
+                Directory.Delete(currentContentItemPath);
 
                 return true;
             });
