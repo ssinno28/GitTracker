@@ -17,6 +17,7 @@ namespace GitTracker.Providers
             _pathProvider = pathProvider;
         }
 
+        public bool IgnoreInJson => true;
         public string Extension => ".md";
 
         public bool IsMatch(PropertyInfo propertyInfo)

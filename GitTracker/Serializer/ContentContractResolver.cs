@@ -25,15 +25,7 @@ namespace GitTracker.Serializer
 
             var propertyInfo = member as PropertyInfo;
             var valueProvider = _valueProviders.FirstOrDefault(x => x.IsMatch(propertyInfo));
-            property.ShouldSerialize = instance =>
-            {
-                if (valueProvider != null)
-                {
-                    return false;
-                }
-
-                return true;
-            };
+            property.ShouldSerialize = instance => !valueProvider?.IgnoreInJson ?? true;
 
             var jsonConverter = _jsonConverters.FirstOrDefault(x => x.IsMatch(propertyInfo));
             if (jsonConverter != null)
