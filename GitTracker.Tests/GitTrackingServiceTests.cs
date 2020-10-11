@@ -41,6 +41,22 @@ namespace GitTracker.Tests
         {
             var commits = GitTrackingService.GetHistory(_initialTrackedItem);
             Assert.Equal("My First Commit\n", commits.Commits.First().Message);
+        }        
+        
+        [Fact]
+        public async Task Test_Get_History_For_Moved_TrackedItem()
+        {
+            var commits = GitTrackingService.GetHistory(_initialTrackedItem);
+            Assert.Equal("My First Commit\n", commits.Commits.First().Message);
+
+            var newBlogPost = await GitTrackingService.ChangeName("My New Name", _initialTrackedItem);
+            GitTrackingService.Stage(newBlogPost);
+
+            GitRepo.Commit("My Second Commit", Email);
+
+            var newCommits = GitTrackingService.GetHistory(newBlogPost);
+            Assert.Equal(2, newCommits.Count);
+            Assert.Equal("My First Commit\n", newCommits.Commits[1].Message);
         }
 
         [Fact]

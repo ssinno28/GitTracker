@@ -600,14 +600,19 @@ namespace GitTracker.Repositories
             return true;
         }
 
-        public int Count(string path)
+        public int Count(IList<string> paths = null)
         {
             int count;
             using (var repo = LocalRepo)
             {
-                count = !string.IsNullOrEmpty(path)
-                    ? repo.Commits.QueryBy(path).Count()
-                    : repo.Commits.Count();
+                if (paths != null && paths.Any())
+                {
+                    count = paths.Sum(path => repo.Commits.Count(x => x[path] != null));
+                }
+                else
+                {
+                    count = repo.Commits.Count();
+                }
             }
 
             return count;
@@ -878,17 +883,23 @@ namespace GitTracker.Repositories
                 {
                     foreach (var path in paths)
                     {
-                        foreach (var logEntry in repo.Commits.QueryBy(path).Skip(skip).Take(take))
+                        foreach (var logEntry in repo.Commits.Where(x => x[path] != null))
                         {
                             commits.Add(new GitCommit
                             {
-                                Author = logEntry.Commit.Author.Name,
-                                Date = logEntry.Commit.Author.When,
-                                Message = logEntry.Commit.Message,
-                                Id = logEntry.Commit.Id.ToString()
+                                Author = logEntry.Author.Name,
+                                Date = logEntry.Author.When,
+                                Message = logEntry.Message,
+                                Id = logEntry.Id.ToString()
                             });
                         }
                     }
+
+                    commits =
+                        commits.OrderBy(x => x.Date)
+                            .Skip(skip)
+                            .Take(take)
+                            .ToList();
                 }
                 else
                 {

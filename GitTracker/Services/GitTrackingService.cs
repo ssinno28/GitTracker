@@ -307,8 +307,11 @@ namespace GitTracker.Services
             var relativeTrackedItemPath =
                 _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
 
-            history.Commits = _gitRepo.GetCommits(page, pageSize, new List<string> { relativeTrackedItemPath });
-            history.Count = _gitRepo.Count(relativeTrackedItemPath);
+            var paths = new List<string> { relativeTrackedItemPath };
+            paths.AddRange(trackedItem.PreviousPaths);
+
+            history.Commits = _gitRepo.GetCommits(page, pageSize, paths);
+            history.Count = _gitRepo.Count(paths);
 
             return history;
         }
@@ -319,9 +322,10 @@ namespace GitTracker.Services
 
             var relativeTrackedItemPath =
                 _pathProvider.GetRelativeTrackedItemPath(trackedItemType);
+            var paths = new List<string> {relativeTrackedItemPath};
 
-            history.Commits = _gitRepo.GetCommits(page, pageSize, new List<string> { relativeTrackedItemPath });
-            history.Count = _gitRepo.Count(relativeTrackedItemPath);
+            history.Commits = _gitRepo.GetCommits(page, pageSize, paths);
+            history.Count = _gitRepo.Count(paths);
 
             return history;
         }
@@ -331,7 +335,7 @@ namespace GitTracker.Services
             var history = new TrackedItemHistory();
 
             history.Commits = _gitRepo.GetCommits(page, pageSize);
-            history.Count = _gitRepo.Count(string.Empty);
+            history.Count = _gitRepo.Count();
 
             return history;
         }
@@ -545,7 +549,9 @@ namespace GitTracker.Services
                 _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
 
             var unstagedItems =
-                _gitRepo.GetUnstagedItems().Where(x => x.Contains(relativeTrackedItemPath));
+                _gitRepo.GetUnstagedItems().Where(x => 
+                    x.Contains(relativeTrackedItemPath) || 
+                    trackedItem.PreviousPaths.Any(x.Contains));
 
             return _gitRepo.Stage(unstagedItems.ToArray());
         }
@@ -556,7 +562,9 @@ namespace GitTracker.Services
                 _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
 
             var unstagedItems =
-                _gitRepo.GetStagedItems().Where(x => x.Contains(relativeTrackedItemPath));
+                _gitRepo.GetStagedItems().Where(x => 
+                    x.Contains(relativeTrackedItemPath) ||
+                    trackedItem.PreviousPaths.Any(x.Contains));
 
             return _gitRepo.Unstage(unstagedItems.ToArray());
         }
