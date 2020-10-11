@@ -260,7 +260,11 @@ namespace GitTracker.Services
                 }
 
                 var valueProviderDiffs =
-                    diffGrouping.Where(x => _valueProviders.Any(vp => vp.Extension.Equals(Path.GetExtension(x.Path))));
+                    diffGrouping.Where(x =>
+                        _valueProviders.Any(vp =>
+                            !string.IsNullOrEmpty(vp.Extension)
+                            && vp.Extension.Equals(Path.GetExtension(x.Path))
+                            ));
 
                 foreach (var gitDiff in valueProviderDiffs)
                 {
@@ -307,8 +311,8 @@ namespace GitTracker.Services
             history.Count = _gitRepo.Count(relativeTrackedItemPath);
 
             return history;
-        }        
-        
+        }
+
         public TrackedItemHistory GetHistory(Type trackedItemType, int page = 1, int pageSize = 10)
         {
             var history = new TrackedItemHistory();
