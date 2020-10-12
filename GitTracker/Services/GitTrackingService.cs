@@ -636,10 +636,23 @@ namespace GitTracker.Services
             }
         }
 
-        public async Task Delete(TrackedItem trackedItem)
+        public async Task<bool> Delete(TrackedItem trackedItem)
         {
-            await _fileProvider.DeleteFiles(trackedItem);
-            await PerformDelete(trackedItem);
+            bool result = await _fileProvider.DeleteFiles(trackedItem);
+            if (result)
+            {
+                try
+                {
+                    await PerformDelete(trackedItem);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Could not delete tracked item {trackedItem.Id}");
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private Type GetContentType(string entity)

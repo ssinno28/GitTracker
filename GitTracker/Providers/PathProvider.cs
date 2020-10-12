@@ -21,12 +21,7 @@ namespace GitTracker.Providers
             var contentItemPath =
                           contentItem != null
                               ? Path.Combine(_gitConfig.LocalPath, contentTypeName, contentItem.Name.MakeUrlFriendly())
-                              : Path.Combine(_gitConfig.LocalPath, contentTypeName, $"{contentType.Name}-temp");
-
-            //if (!Directory.Exists(contentItemPath))
-            //{
-            //    Directory.CreateDirectory(contentItemPath);
-            //}
+                              : Path.Combine(_gitConfig.LocalPath, contentTypeName);
 
             return contentItemPath;
         }

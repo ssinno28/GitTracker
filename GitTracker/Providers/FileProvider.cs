@@ -42,14 +42,20 @@ namespace GitTracker.Providers
 
             foreach (var contentType in contentTypes)
             {
-                string contentTypeFolderPath = $"{_gitConfig.LocalPath}\\{contentType.Name}";
+                string contentTypeFolderPath = _pathProvider.GetTrackedItemPath(contentType);
                 if (!Directory.Exists(contentTypeFolderPath)) continue;
 
                 var paths =
                     Directory.GetFiles(contentTypeFolderPath, "*.json", SearchOption.AllDirectories)
                         .ToList();
 
-                paths.ForEach(x => filePaths.Add(x));
+                paths.ForEach(x =>
+                {
+                    if (Guid.TryParse(Path.GetFileNameWithoutExtension(x), out _))
+                    {
+                        filePaths.Add(x);
+                    }
+                });
             }
 
             return filePaths.Select(File.ReadAllText).ToList();

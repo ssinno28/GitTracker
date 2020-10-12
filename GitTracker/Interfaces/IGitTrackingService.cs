@@ -82,7 +82,7 @@ namespace GitTracker.Interfaces
         /// </summary>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        Task Delete(TrackedItem trackedItem);
+        Task<bool> Delete(TrackedItem trackedItem);
 
         /// <summary>
         /// Updates a specific tracked item
