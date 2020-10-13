@@ -178,10 +178,10 @@ namespace GitTracker.Services
         {
             foreach (var gitDiff in diff.Where(x => x.Path.EndsWith(".json")))
             {
-                //if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
-                //{
-                //    continue; 
-                //}
+                if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
+                {
+                    continue;
+                }
 
                 switch (gitDiff.ChangeKind)
                 {
@@ -248,10 +248,10 @@ namespace GitTracker.Services
 
                 foreach (var gitDiff in diffGrouping.Where(x => x.Path.EndsWith(".json")))
                 {
-                    //if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
-                    //{
-                    //    continue;
-                    //}
+                    if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
+                    {
+                        continue;
+                    }
 
                     trackedItemDiff.Initial = await DeserializeContentItem(gitDiff.InitialFileContent);
                     trackedItemDiff.Final = await DeserializeContentItem(gitDiff.FinalFileContent);
@@ -322,7 +322,7 @@ namespace GitTracker.Services
 
             var relativeTrackedItemPath =
                 _pathProvider.GetRelativeTrackedItemPath(trackedItemType);
-            var paths = new List<string> {relativeTrackedItemPath};
+            var paths = new List<string> { relativeTrackedItemPath };
 
             history.Commits = _gitRepo.GetCommits(page, pageSize, paths);
             history.Count = _gitRepo.Count(paths);
@@ -332,10 +332,11 @@ namespace GitTracker.Services
 
         public TrackedItemHistory GetHistory(int page = 1, int pageSize = 10)
         {
-            var history = new TrackedItemHistory();
-
-            history.Commits = _gitRepo.GetCommits(page, pageSize);
-            history.Count = _gitRepo.Count();
+            var history = new TrackedItemHistory
+            {
+                Commits = _gitRepo.GetCommits(page, pageSize),
+                Count = _gitRepo.Count()
+            };
 
             return history;
         }
@@ -549,8 +550,8 @@ namespace GitTracker.Services
                 _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
 
             var unstagedItems =
-                _gitRepo.GetUnstagedItems().Where(x => 
-                    x.Contains(relativeTrackedItemPath) || 
+                _gitRepo.GetUnstagedItems().Where(x =>
+                    x.Contains(relativeTrackedItemPath) ||
                     trackedItem.PreviousPaths.Any(x.Contains));
 
             return _gitRepo.Stage(unstagedItems.ToArray());
@@ -562,7 +563,7 @@ namespace GitTracker.Services
                 _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
 
             var unstagedItems =
-                _gitRepo.GetStagedItems().Where(x => 
+                _gitRepo.GetStagedItems().Where(x =>
                     x.Contains(relativeTrackedItemPath) ||
                     trackedItem.PreviousPaths.Any(x.Contains));
 
