@@ -357,8 +357,7 @@ namespace GitTracker.Services
             {
                 TrackedItemConflict trackedItemConflict = new TrackedItemConflict
                 {
-                    ValueProviderConflicts = new List<ValueProviderConflict>(),
-                    ChangedProperties = new List<PropertyInfo>()
+                    ValueProviderConflicts = new List<ValueProviderConflict>()
                 };
 
                 foreach (var conflict in conflictGrouping.Where(x => x.Ours.Path.EndsWith(".json")))

@@ -199,7 +199,6 @@ namespace GitTracker.Tests
 
             var conflicts = await GitTrackingService.GetTrackedItemConflicts();
             Assert.Equal(1, conflicts.Count);
-            Assert.Equal(2, conflicts.First().ChangedProperties.Count);
         }
 
         [Fact]
@@ -225,7 +224,6 @@ namespace GitTracker.Tests
 
             var conflicts = await GitTrackingService.GetTrackedItemConflicts();
             Assert.Equal(1, conflicts.Count);
-            Assert.Equal(2, conflicts.First().ChangedProperties.Count);
 
             // take ours and merge
             var conflict = conflicts.First();
@@ -272,7 +270,6 @@ namespace GitTracker.Tests
 
             var conflicts = await GitTrackingService.GetTrackedItemConflicts();
             Assert.Equal(1, conflicts.Count);
-            Assert.Equal(2, conflicts.First().ChangedProperties.Count);
             Assert.Equal(1, conflicts.First().ValueProviderConflicts.Count);
         }
 
@@ -311,7 +308,6 @@ namespace GitTracker.Tests
 
             var conflicts = await GitTrackingService.GetTrackedItemConflicts();
             Assert.Equal(1, conflicts.Count);
-            Assert.Equal(1, conflicts.First().ChangedProperties.Count);
             Assert.Equal(0, conflicts.First().ValueProviderConflicts.Count);
         }
 
