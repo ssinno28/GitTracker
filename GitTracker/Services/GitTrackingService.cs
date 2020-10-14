@@ -293,7 +293,6 @@ namespace GitTracker.Services
                     }
                 }
 
-                trackedItemDiff.ChangedProperties = GetChangedProperties(trackedItemDiff.Initial, trackedItemDiff.Final);
                 trackedItemDiffs.Add(trackedItemDiff);
             }
 
@@ -341,46 +340,6 @@ namespace GitTracker.Services
             return history;
         }
 
-        private IList<PropertyInfo> GetChangedProperties(TrackedItem ours, TrackedItem theirs)
-        {
-            if (ours == null || theirs == null)
-            {
-                return new List<PropertyInfo>();
-            }
-
-            return ours.GetType()
-            .GetProperties()
-            .Where(x =>
-            {
-                var ourValue = x.GetValue(ours);
-                var theirValue = x.GetValue(theirs);
-
-                if (x.IsPropertyACollection())
-                {
-                    //TODO: figure out how to compare lists
-                    return false;
-                }
-
-                if (ourValue == null && theirValue != null)
-                {
-                    return true;
-                }
-
-                if (theirValue == null && ourValue != null)
-                {
-                    return true;
-                }
-
-                if (ourValue == null && theirValue == null)
-                {
-                    return false;
-                }
-
-                return !ourValue.Equals(theirValue);
-            })
-            .ToList();
-        }
-
         private PropertyInfo GetValueProviderProperty(Type contentType, string fileName)
         {
             string propertyName = Path.GetFileNameWithoutExtension(fileName);
@@ -404,10 +363,10 @@ namespace GitTracker.Services
 
                 foreach (var conflict in conflictGrouping.Where(x => x.Ours.Path.EndsWith(".json")))
                 {
-                    //if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
-                    //{
-                    //    continue;
-                    //}
+                    if (!Guid.TryParse(Path.GetFileNameWithoutExtension(conflict.Ours.Path), out _))
+                    {
+                        continue;
+                    }
 
                     var fileContents =
                         _gitRepo.GetDiff3Files(conflict.Ours.Path, conflict.Theirs.Path, conflict.Ancestor?.Path);
@@ -419,13 +378,11 @@ namespace GitTracker.Services
 
                     trackedItemConflict.Ours = await DeserializeContentItem(fileContents.OurFile);
                     trackedItemConflict.Theirs = await DeserializeContentItem(fileContents.TheirFile);
-
-                    trackedItemConflict.ChangedProperties =
-                        GetChangedProperties(trackedItemConflict.Ours, trackedItemConflict.Theirs);
                 }
 
                 var valueProviderDiffs =
-                    conflictGrouping.Where(x => _valueProviders.Any(vp => vp.Extension.Equals(Path.GetExtension(x.Ours.Path))));
+                    conflictGrouping.Where(x => 
+                        _valueProviders.Any(vp => vp.Extension.Equals(Path.GetExtension(x.Ours.Path))));
 
                 foreach (var conflict in valueProviderDiffs)
                 {
@@ -458,8 +415,6 @@ namespace GitTracker.Services
                     trackedItemConflict.ValueProviderConflicts.Add(valueProviderConflict);
                 }
 
-                trackedItemConflict.ChangedProperties =
-                    GetChangedProperties(trackedItemConflict.Ours, trackedItemConflict.Theirs);
                 trackedItemConflicts.Add(trackedItemConflict);
             }
 
