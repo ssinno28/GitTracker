@@ -269,6 +269,10 @@ namespace GitTracker.Services
                 foreach (var gitDiff in valueProviderDiffs)
                 {
                     trackedItemDiff.ValueProviderDiffs.Add(gitDiff);
+                    if (trackedItemDiff.Initial == null && trackedItemDiff.Final == null)
+                    {
+                        continue;
+                    }
 
                     Type trackedItemType;
                     switch (gitDiff.ChangeKind)
@@ -380,7 +384,7 @@ namespace GitTracker.Services
                 }
 
                 var valueProviderDiffs =
-                    conflictGrouping.Where(x => 
+                    conflictGrouping.Where(x =>
                         _valueProviders.Any(vp => vp.Extension.Equals(Path.GetExtension(x.Ours.Path))));
 
                 foreach (var conflict in valueProviderDiffs)
