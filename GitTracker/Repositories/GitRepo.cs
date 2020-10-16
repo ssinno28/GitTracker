@@ -607,7 +607,7 @@ namespace GitTracker.Repositories
             {
                 if (paths != null && paths.Any())
                 {
-                    count = paths.Sum(path => repo.Commits.Count(x => x[path] != null));
+                    count = paths.Sum(path => repo.Commits.QueryBy(path).Count());
                 }
                 else
                 {
@@ -883,14 +883,14 @@ namespace GitTracker.Repositories
                 {
                     foreach (var path in paths)
                     {
-                        foreach (var logEntry in repo.Commits.Where(x => x[path] != null))
+                        foreach (var logEntry in repo.Commits.QueryBy(path))
                         {
                             commits.Add(new GitCommit
                             {
-                                Author = logEntry.Author.Name,
-                                Date = logEntry.Author.When,
-                                Message = logEntry.Message,
-                                Id = logEntry.Id.ToString()
+                                Author = logEntry.Commit.Author.Name,
+                                Date = logEntry.Commit.Author.When,
+                                Message = logEntry.Commit.Message,
+                                Id = logEntry.Commit.Id.ToString()
                             });
                         }
                     }
