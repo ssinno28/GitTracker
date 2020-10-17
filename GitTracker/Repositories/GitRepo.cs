@@ -105,7 +105,7 @@ namespace GitTracker.Repositories
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Could not pull from repo ${_gitConfig.RemotePath} error: {ex}");
+                    _logger.LogError(ex, $"Could not pull from repo {_gitConfig.RemotePath} error: {ex}");
                     return false;
                 }
             }
@@ -896,7 +896,7 @@ namespace GitTracker.Repositories
                     }
 
                     commits =
-                        commits.OrderBy(x => x.Date)
+                        commits.OrderByDescending(x => x.Date)
                             .Skip(skip)
                             .Take(take)
                             .ToList();
