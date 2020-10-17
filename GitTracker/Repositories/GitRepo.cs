@@ -105,7 +105,7 @@ namespace GitTracker.Repositories
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Could not pull from repo ${_gitConfig.RemotePath}");
+                    _logger.LogError(ex, $"Could not pull from repo ${_gitConfig.RemotePath} error: {ex}");
                     return false;
                 }
             }
