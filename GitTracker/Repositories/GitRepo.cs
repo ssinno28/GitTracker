@@ -759,7 +759,7 @@ namespace GitTracker.Repositories
             return GetGitDiffs(patchEntryChanges, id, GetCurrentCommitId());
         }
 
-        public IList<GitDiff> GetDiffFromHead()
+        public IList<GitDiff> GetDiffFromHead(IList<string> paths = null)
         {
             IList<PatchEntryChanges> patchEntryChanges = new List<PatchEntryChanges>();
             using (var repo = LocalRepo)
@@ -768,7 +768,24 @@ namespace GitTracker.Repositories
 
                 var repoDifferences = repo.Diff.Compare<Patch>(repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory);
 
-                try { patchEntryChanges = repoDifferences.ToList(); }
+                try
+                {
+                    if (paths != null && paths.Any())
+                    {
+                        foreach (var path in paths)
+                        {
+                            var changes = repoDifferences.Where(e => e.Path.Contains(path)).ToList();
+                            foreach (var change in changes)
+                            {
+                                patchEntryChanges.Add(change);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        patchEntryChanges = repoDifferences.ToList();
+                    }
+                }
                 catch { } // If the file has been renamed in the past- this search will fail
             }
 

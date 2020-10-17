@@ -537,10 +537,17 @@ namespace GitTracker.Services
         public async Task<TrackedItem> Update(TrackedItem trackedItem)
         {
             await SetNonJsonValues(trackedItem);
-
-            trackedItem.ModifiedDate = DateTimeOffset.Now;
             await _fileProvider.UpsertFiles(trackedItem);
-            await PerformUpdate(trackedItem);
+
+            var trackedItemPath = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
+            var diff = _gitRepo.GetDiffFromHead(new List<string> { trackedItemPath });
+            if (diff.Any())
+            {
+                trackedItem.ModifiedDate = DateTimeOffset.Now;
+                await _fileProvider.UpsertFiles(trackedItem);
+
+                await PerformUpdate(trackedItem);
+            }
 
             return trackedItem;
         }

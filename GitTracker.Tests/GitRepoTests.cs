@@ -36,8 +36,8 @@ namespace GitTracker.Tests
         {
             bool result = GitRepo.Push(Email);
             Assert.True(result);
-        }   
-        
+        }
+
         [Fact]
         public void Test_Pull()
         {
@@ -75,8 +75,8 @@ namespace GitTracker.Tests
             Assert.NotEmpty(diff);
             Assert.Equal(ChangeKind.Added, addedDiff.ChangeKind);
             Assert.Equal(ChangeKind.Deleted, deletedDiff.ChangeKind);
-        }        
-        
+        }
+
         [Fact]
         public void Test_Checkout_Deleted_Path()
         {
@@ -132,8 +132,8 @@ namespace GitTracker.Tests
             untrackedFiles = GitRepo.GetUnstagedItems();
 
             Assert.Equal(1, untrackedFiles.Count);
-        }        
-        
+        }
+
         [Fact]
         public void Test_Revert_Commit()
         {
@@ -152,6 +152,17 @@ namespace GitTracker.Tests
             var stagedFiles = GitRepo.GetStagedItems();
 
             Assert.Equal(1, stagedFiles.Count);
+        }
+
+        [Fact]
+        public void Test_Get_Diff_From_Head_For_Path()
+        {
+            var content = "Testing diff from head";
+            string filePath = Path.Combine(LocalPath, "fileToCommit.txt");
+            File.WriteAllText(filePath, content);
+
+            var diff = GitRepo.GetDiffFromHead(new List<string> { "fileToCommit.txt" });
+            Assert.Equal(1, diff.Count);
         }
     }
 }

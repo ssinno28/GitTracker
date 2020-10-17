@@ -18,7 +18,7 @@ namespace GitTracker.Interfaces
         List<GitCommit> GetCommits(int page = 1, int take = 10, IList<string> paths = null);
         int Count(IList<string> paths = null);
         IList<GitDiff> GetDiff(IList<string> paths, string id, string endId = null);
-        IList<GitDiff> GetDiffFromHead();
+        IList<GitDiff> GetDiffFromHead(IList<string> paths = null);
         IList<string> GetBranches();
         string GetCurrentBranch();
         string GetCurrentCommitId();
