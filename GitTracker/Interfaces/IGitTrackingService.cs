@@ -218,5 +218,12 @@ namespace GitTracker.Interfaces
         /// <param name="pageSize"></param>
         /// <returns></returns>
         TrackedItemHistory GetHistory(int page = 1, int pageSize = 10);
+
+        /// <summary>
+        /// Gets all of the tracked items for the given Tracked Item Types directly from the file system
+        /// </summary>
+        /// <param name="trackedItemTypes"></param>
+        /// <returns></returns>
+        Task<IList<TrackedItem>> GetTrackedItemsFromSource(IList<Type> trackedItemTypes);
     }
 }

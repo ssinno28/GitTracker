@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -542,6 +543,21 @@ namespace GitTracker.Services
             await PerformUpdate(trackedItem);
 
             return trackedItem;
+        }
+
+        public async Task<IList<TrackedItem>> GetTrackedItemsFromSource(IList<Type> trackedItemTypes)
+        {
+            IList<TrackedItem> trackedItems = new List<TrackedItem>();
+            var documents = _fileProvider.GetFiles(trackedItemTypes);
+            foreach (var document in documents)
+            {
+                var trackedItem = await DeserializeContentItem(document);
+                await SetNonJsonValues(trackedItem);
+
+                trackedItems.Add(trackedItem);
+            }
+
+            return trackedItems;
         }
 
         public async Task<T> ChangeName<T>(string newName, T trackedItem) where T : TrackedItem
