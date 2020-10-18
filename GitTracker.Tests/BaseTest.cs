@@ -51,15 +51,15 @@ namespace GitTracker.Tests
 
             UpdateOperationMock = new Mock<IUpdateOperation>();
             UpdateOperationMock.Setup(x => x.IsMatch(It.IsAny<Type>())).Returns(true);
-            UpdateOperationMock.Setup(x => x.Update(It.IsAny<TrackedItem>())).Returns(Task.CompletedTask);
+            UpdateOperationMock.Setup(x => x.Update(It.IsAny<ITrackedItem>())).Returns(Task.CompletedTask);
             
             CreateOperationMock = new Mock<ICreateOperation>();
             CreateOperationMock.Setup(x => x.IsMatch(It.IsAny<Type>())).Returns(true);
-            CreateOperationMock.Setup(x => x.Create(It.IsAny<TrackedItem>())).Returns(Task.CompletedTask);
+            CreateOperationMock.Setup(x => x.Create(It.IsAny<ITrackedItem>())).Returns(Task.CompletedTask);
             
             DeleteOperationMock = new Mock<IDeleteOperation>();
             DeleteOperationMock.Setup(x => x.IsMatch(It.IsAny<Type>())).Returns(true);
-            DeleteOperationMock.Setup(x => x.Delete(It.IsAny<TrackedItem>())).Returns(Task.CompletedTask);
+            DeleteOperationMock.Setup(x => x.Delete(It.IsAny<ITrackedItem>())).Returns(Task.CompletedTask);
 
             serviceCollection.Add(new ServiceDescriptor(typeof(IUpdateOperation), UpdateOperationMock.Object));
             serviceCollection.Add(new ServiceDescriptor(typeof(IDeleteOperation), DeleteOperationMock.Object));

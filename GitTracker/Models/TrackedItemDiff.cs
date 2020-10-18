@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
+using GitTracker.Interfaces;
 
 namespace GitTracker.Models
 {
     public class TrackedItemDiff
     {
-        public TrackedItem Final { get; set; }
-        public TrackedItem Initial { get; set; }
+        public ITrackedItem Final { get; set; }
+        public ITrackedItem Initial { get; set; }
         public GitDiff TrackedItemGitDiff { get; set; }
         public IList<GitDiff> ValueProviderDiffs { get; set; }
     }

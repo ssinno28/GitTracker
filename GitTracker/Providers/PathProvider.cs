@@ -15,7 +15,7 @@ namespace GitTracker.Providers
             _gitConfig = gitConfig;
         }
 
-        public string GetTrackedItemPath(Type contentType, TrackedItem contentItem = null)
+        public string GetTrackedItemPath(Type contentType, ITrackedItem contentItem = null)
         {
             string contentTypeName = contentType.Name;
             var contentItemPath =
@@ -26,7 +26,7 @@ namespace GitTracker.Providers
             return contentItemPath;
         }
 
-        public string GetRelativeTrackedItemPath(Type contentType, TrackedItem contentItem = null)
+        public string GetRelativeTrackedItemPath(Type contentType, ITrackedItem contentItem = null)
         {
             string contentTypeName = contentType.Name;
             var contentItemPath =

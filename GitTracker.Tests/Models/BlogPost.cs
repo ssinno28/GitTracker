@@ -1,11 +1,12 @@
+using System;
 using System.Collections.Generic;
 using GitTracker.Attributes;
 using GitTracker.Helpers;
-using GitTracker.Models;
+using GitTracker.Interfaces;
 
 namespace GitTracker.Tests.Models
 {
-    public class BlogPost : TrackedItem
+    public class BlogPost : ITrackedItem
     {
         [Markdown]
         public string Body { get; set; }
@@ -17,5 +18,11 @@ namespace GitTracker.Tests.Models
         public string Category { get; set; }
         public string SafeName => Name.MakeUrlFriendly();
         public bool HasThumbnail => !string.IsNullOrEmpty(ThumbnailUrl);
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string TypeDefinition { get; set; }
+        public DateTimeOffset CreatedDate { get; set; }
+        public DateTimeOffset ModifiedDate { get; set; }
+        public IList<string> PreviousPaths { get; set; }
     }
 }

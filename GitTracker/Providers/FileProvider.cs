@@ -61,7 +61,7 @@ namespace GitTracker.Providers
             return filePaths.Select(File.ReadAllText).ToList();
         }
 
-        public async Task<bool> DeleteFiles(params TrackedItem[] trackedItems)
+        public async Task<bool> DeleteFiles(params ITrackedItem[] trackedItems)
         {
             return await Task.Run(() =>
             {
@@ -86,7 +86,7 @@ namespace GitTracker.Providers
             });
         }
 
-        public async Task<bool> UpsertFiles(params TrackedItem[] trackedItems)
+        public async Task<bool> UpsertFiles(params ITrackedItem[] trackedItems)
         {
             return await Task.Run(() =>
             {
@@ -119,7 +119,7 @@ namespace GitTracker.Providers
             });
         }
 
-        public async Task<bool> MoveFile(string newName, TrackedItem trackedItem)
+        public async Task<bool> MoveFile(string newName, ITrackedItem trackedItem)
         {
             return await Task.Run(() =>
             {

@@ -7,6 +7,6 @@ namespace GitTracker.Interfaces
     public interface IDeleteOperation
     {
         bool IsMatch(Type contentType);
-        Task Delete(TrackedItem trackedItem);
+        Task Delete(ITrackedItem trackedItem);
     }
 }

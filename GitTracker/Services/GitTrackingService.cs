@@ -215,7 +215,7 @@ namespace GitTracker.Services
             return await GetTrackedItemDiffs(new List<string> { path }, currentCommitId, newCommitId);
         }
 
-        public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(TrackedItem trackedItem,
+        public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(ITrackedItem trackedItem,
             string currentCommitId = null, string newCommitId = null)
         {
             string path = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
@@ -304,7 +304,7 @@ namespace GitTracker.Services
             return trackedItemDiffs;
         }
 
-        public TrackedItemHistory GetHistory(TrackedItem trackedItem, int page = 1, int pageSize = 10)
+        public TrackedItemHistory GetHistory(ITrackedItem trackedItem, int page = 1, int pageSize = 10)
         {
             var history = new TrackedItemHistory();
 
@@ -312,7 +312,10 @@ namespace GitTracker.Services
                 _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
 
             var paths = new List<string> { relativeTrackedItemPath };
-            paths.AddRange(trackedItem.PreviousPaths);
+            if (trackedItem.PreviousPaths != null && trackedItem.PreviousPaths.Any())
+            {
+                paths.AddRange(trackedItem.PreviousPaths);
+            }
 
             history.Commits = _gitRepo.GetCommits(page, pageSize, paths);
             history.Count = _gitRepo.Count(paths);
@@ -425,7 +428,7 @@ namespace GitTracker.Services
             return trackedItemConflicts;
         }
 
-        private async Task PerformCreate(TrackedItem trackedItem)
+        private async Task PerformCreate(ITrackedItem trackedItem)
         {
             var createOperation =
                 _createOperations.FirstOrDefault(x => x.IsMatch(trackedItem.GetType()));
@@ -435,7 +438,7 @@ namespace GitTracker.Services
             await createOperation.Create(trackedItem);
         }
 
-        private async Task PerformDelete(TrackedItem trackedItem)
+        private async Task PerformDelete(ITrackedItem trackedItem)
         {
             var deleteOperation =
                 _deleteOperations.FirstOrDefault(x => x.IsMatch(trackedItem.GetType()));
@@ -445,7 +448,7 @@ namespace GitTracker.Services
             await deleteOperation.Delete(trackedItem);
         }
 
-        private async Task PerformUpdate(TrackedItem trackedItem)
+        private async Task PerformUpdate(ITrackedItem trackedItem)
         {
             var updateOperation =
                 _updateOperations.FirstOrDefault(x => x.IsMatch(trackedItem.GetType()));
@@ -455,7 +458,7 @@ namespace GitTracker.Services
             await updateOperation.Update(trackedItem);
         }
 
-        private async Task<TrackedItem> GetTrackedItem(string path)
+        private async Task<ITrackedItem> GetTrackedItem(string path)
         {
             string fileContent = _fileProvider.GetFile(path);
             var trackedItem = await DeserializeContentItem(fileContent);
@@ -463,13 +466,13 @@ namespace GitTracker.Services
             return trackedItem;
         }
 
-        public async Task<TrackedItem> Create(string entity)
+        public async Task<ITrackedItem> Create(string entity)
         {
             var contentItem = await DeserializeContentItem(entity);
             return await Create(contentItem);
         }
 
-        private async Task SetNonJsonValues(TrackedItem trackedItem)
+        private async Task SetNonJsonValues(ITrackedItem trackedItem)
         {
             foreach (var propertyInfo in trackedItem.GetType().GetProperties())
             {
@@ -483,14 +486,15 @@ namespace GitTracker.Services
             }
         }
 
-        public async Task<TrackedItem> Create(TrackedItem trackedItem)
+        public async Task<ITrackedItem> Create(ITrackedItem trackedItem)
         {
             CheckNameExists(trackedItem.GetType(), trackedItem);
 
             await SetNonJsonValues(trackedItem);
 
             trackedItem.Id = Guid.NewGuid().ToString();
-            trackedItem.CreatedDate = DateTimeOffset.Now;
+            trackedItem.CreatedDate = DateTimeOffset.Now; 
+            trackedItem.TypeDefinition = trackedItem.GetType().Name;
 
             await _fileProvider.UpsertFiles(trackedItem);
             await PerformCreate(trackedItem);
@@ -498,12 +502,12 @@ namespace GitTracker.Services
             return trackedItem;
         }
 
-        public async Task<T> Create<T>(T trackedItem) where T : TrackedItem
+        public async Task<T> Create<T>(T trackedItem) where T : ITrackedItem
         {
-            return (T)await Create((TrackedItem)trackedItem);
+            return (T)await Create((ITrackedItem)trackedItem);
         }
 
-        public bool Stage(TrackedItem trackedItem)
+        public bool Stage(ITrackedItem trackedItem)
         {
             var relativeTrackedItemPath =
                 _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
@@ -516,7 +520,7 @@ namespace GitTracker.Services
             return _gitRepo.Stage(unstagedItems.ToArray());
         }
 
-        public bool Unstage(TrackedItem trackedItem)
+        public bool Unstage(ITrackedItem trackedItem)
         {
             var relativeTrackedItemPath =
                 _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
@@ -529,12 +533,12 @@ namespace GitTracker.Services
             return _gitRepo.Unstage(unstagedItems.ToArray());
         }
 
-        public async Task<T> Update<T>(T trackedItem) where T : TrackedItem
+        public async Task<T> Update<T>(T trackedItem) where T : ITrackedItem
         {
-            return (T)await Update((TrackedItem)trackedItem);
+            return (T)await Update((ITrackedItem)trackedItem);
         }
 
-        public async Task<TrackedItem> Update(TrackedItem trackedItem)
+        public async Task<ITrackedItem> Update(ITrackedItem trackedItem)
         {
             await SetNonJsonValues(trackedItem);
             await _fileProvider.UpsertFiles(trackedItem);
@@ -544,6 +548,7 @@ namespace GitTracker.Services
             if (diff.Any())
             {
                 trackedItem.ModifiedDate = DateTimeOffset.Now;
+                trackedItem.TypeDefinition = trackedItem.GetType().Name;
                 await _fileProvider.UpsertFiles(trackedItem);
 
                 await PerformUpdate(trackedItem);
@@ -552,9 +557,9 @@ namespace GitTracker.Services
             return trackedItem;
         }
 
-        public async Task<IList<TrackedItem>> GetTrackedItemsFromSource(IList<Type> trackedItemTypes)
+        public async Task<IList<ITrackedItem>> GetTrackedItemsFromSource(IList<Type> trackedItemTypes)
         {
-            IList<TrackedItem> trackedItems = new List<TrackedItem>();
+            IList<ITrackedItem> trackedItems = new List<ITrackedItem>();
             var documents = _fileProvider.GetFiles(trackedItemTypes);
             foreach (var document in documents)
             {
@@ -567,13 +572,18 @@ namespace GitTracker.Services
             return trackedItems;
         }
 
-        public async Task<T> ChangeName<T>(string newName, T trackedItem) where T : TrackedItem
+        public async Task<T> ChangeName<T>(string newName, T trackedItem) where T : ITrackedItem
         {
-            return (T)await ChangeName(newName, (TrackedItem)trackedItem);
+            return (T)await ChangeName(newName, (ITrackedItem)trackedItem);
         }
 
-        public async Task<TrackedItem> ChangeName(string newName, TrackedItem trackedItem)
+        public async Task<ITrackedItem> ChangeName(string newName, ITrackedItem trackedItem)
         {
+            if (trackedItem.PreviousPaths == null)
+            {
+                trackedItem.PreviousPaths = new List<string>();
+            }
+
             // make sure we add the previous path before changing the name!
             trackedItem.PreviousPaths.Add(_pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem));
 
@@ -585,16 +595,16 @@ namespace GitTracker.Services
             return trackedItem;
         }
 
-        public async Task<T> CreateDraft<T>(string name, Type contentType, T trackedItem = null) where T : TrackedItem
+        public async Task<T> CreateDraft<T>(string name, Type contentType, ITrackedItem trackedItem = null) where T : ITrackedItem
         {
-            return (T)await CreateDraft(name, contentType, (TrackedItem)trackedItem);
+            return (T)await CreateDraft(name, contentType, trackedItem);
         }
 
-        public async Task<TrackedItem> CreateDraft(string name, Type contentType, TrackedItem trackedItem = null)
+        public async Task<ITrackedItem> CreateDraft(string name, Type contentType, ITrackedItem trackedItem = null)
         {
             if (trackedItem == null)
             {
-                trackedItem = (TrackedItem)Activator.CreateInstance(contentType);
+                trackedItem = (ITrackedItem)Activator.CreateInstance(contentType);
             }
 
             trackedItem.Name = name;
@@ -609,7 +619,7 @@ namespace GitTracker.Services
             return trackedItem;
         }
 
-        private void CheckNameExists(Type trackedItemType, TrackedItem trackedItem)
+        private void CheckNameExists(Type trackedItemType, ITrackedItem trackedItem)
         {
             string trackedItemDirectory = _pathProvider.GetTrackedItemPath(trackedItemType, trackedItem);
             if (Directory.Exists(trackedItemDirectory))
@@ -618,7 +628,7 @@ namespace GitTracker.Services
             }
         }
 
-        public async Task<bool> Delete(TrackedItem trackedItem)
+        public async Task<bool> Delete(ITrackedItem trackedItem)
         {
             bool result = await _fileProvider.DeleteFiles(trackedItem);
             if (result)
@@ -643,7 +653,7 @@ namespace GitTracker.Services
             return _gitConfig.TrackedTypes.First(x => x.Name.Equals(typeDefinition));
         }
 
-        private async Task<TrackedItem> DeserializeContentItem(string document)
+        private async Task<ITrackedItem> DeserializeContentItem(string document)
         {
             if (string.IsNullOrEmpty(document))
             {
@@ -656,7 +666,7 @@ namespace GitTracker.Services
                 ContractResolver = _contentContractResolver
             };
 
-            var trackedItem = (TrackedItem)JsonConvert.DeserializeObject(document, contentType, serializerSettings);
+            var trackedItem = (ITrackedItem)JsonConvert.DeserializeObject(document, contentType, serializerSettings);
             await SetNonJsonValues(trackedItem);
 
             return trackedItem;

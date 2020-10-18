@@ -9,6 +9,6 @@ namespace GitTracker.Interfaces
         bool IgnoreInJson { get; }
         string Extension { get; }
         bool IsMatch(PropertyInfo propertyInfo);
-        Task<object> GetValue(TrackedItem trackedItem, PropertyInfo propertyInfo);
+        Task<object> GetValue(ITrackedItem trackedItem, PropertyInfo propertyInfo);
     }
 }

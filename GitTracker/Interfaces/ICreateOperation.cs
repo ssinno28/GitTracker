@@ -7,6 +7,6 @@ namespace GitTracker.Interfaces
     public interface ICreateOperation
     {
         bool IsMatch(Type contentType);
-        Task Create(TrackedItem trackedItem);
+        Task Create(ITrackedItem trackedItem);
     }
 }

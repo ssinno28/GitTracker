@@ -25,7 +25,7 @@ namespace GitTracker.Providers
             return propertyInfo.GetCustomAttribute<MarkdownAttribute>() != null;
         }
 
-        public async Task<object> GetValue(TrackedItem trackedItem, PropertyInfo propertyInfo)
+        public async Task<object> GetValue(ITrackedItem trackedItem, PropertyInfo propertyInfo)
         {
             var contentItemPath = _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
             string filePath = Path.Combine(contentItemPath, $"{propertyInfo.Name.ToSentenceCase().MakeUrlFriendly()}.md");

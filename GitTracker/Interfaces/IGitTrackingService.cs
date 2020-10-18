@@ -38,7 +38,7 @@ namespace GitTracker.Interfaces
         /// <param name="userName"></param>
         /// <param name="trackedItems"></param>
         /// <returns></returns>
-        // Task<bool> Stash(string message, string email, string userName, params TrackedItem[] trackedItems);
+        // Task<bool> Stash(string message, string email, string userName, params ITrackedItem[] trackedItems);
 
         /// <summary>
         /// Switches to the branch specified and peforms any update/delete/create operations based on diff between branches
@@ -59,7 +59,7 @@ namespace GitTracker.Interfaces
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        Task<TrackedItem> Create(string entity);
+        Task<ITrackedItem> Create(string entity);
 
         /// <summary>
         /// Creates a folder for this specific tracked item and places a json file along with any other files (markdown for example)
@@ -67,7 +67,7 @@ namespace GitTracker.Interfaces
         /// </summary>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        Task<TrackedItem> Create(TrackedItem trackedItem);
+        Task<ITrackedItem> Create(ITrackedItem trackedItem);
 
         /// <summary>
         /// Performs cast of type before and after creating a tracked item
@@ -75,14 +75,14 @@ namespace GitTracker.Interfaces
         /// <typeparam name="T"></typeparam>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        Task<T> Create<T>(T trackedItem) where T : TrackedItem;
+        Task<T> Create<T>(T trackedItem) where T : ITrackedItem;
 
         /// <summary>
         /// Deletes a tracked item folder.
         /// </summary>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        Task<bool> Delete(TrackedItem trackedItem);
+        Task<bool> Delete(ITrackedItem trackedItem);
 
         /// <summary>
         /// Updates a specific tracked item
@@ -90,14 +90,14 @@ namespace GitTracker.Interfaces
         /// <typeparam name="T"></typeparam>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        Task<T> Update<T>(T trackedItem) where T : TrackedItem;
+        Task<T> Update<T>(T trackedItem) where T : ITrackedItem;
 
         /// <summary>
         /// Updates a specific tracked item
         /// </summary>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        Task<TrackedItem> Update(TrackedItem trackedItem);
+        Task<ITrackedItem> Update(ITrackedItem trackedItem);
 
         /// <summary>
         /// Creates a new folder for a tracked item and moves all of the files into it 
@@ -105,7 +105,7 @@ namespace GitTracker.Interfaces
         /// <param name="newName"></param>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        Task<TrackedItem> ChangeName(string newName, TrackedItem trackedItem);
+        Task<ITrackedItem> ChangeName(string newName, ITrackedItem trackedItem);
 
         /// <summary>
         /// Creates a new folder for a tracked item and moves all of the files into it
@@ -114,7 +114,7 @@ namespace GitTracker.Interfaces
         /// <param name="newName"></param>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        Task<T> ChangeName<T>(string newName, T trackedItem) where T : TrackedItem;
+        Task<T> ChangeName<T>(string newName, T trackedItem) where T : ITrackedItem;
 
         /// <summary>
         /// Creates a draft for a tracked item
@@ -123,7 +123,7 @@ namespace GitTracker.Interfaces
         /// <param name="contentType"></param>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        Task<TrackedItem> CreateDraft(string name, Type contentType, TrackedItem trackedItem = null);
+        Task<ITrackedItem> CreateDraft(string name, Type contentType, ITrackedItem trackedItem = null);
 
         /// <summary>
         /// Creates a draft for a tracked item
@@ -133,21 +133,21 @@ namespace GitTracker.Interfaces
         /// <param name="contentType"></param>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        Task<T> CreateDraft<T>(string name, Type contentType, T trackedItem = null) where T : TrackedItem;
+        Task<T> CreateDraft<T>(string name, Type contentType, ITrackedItem trackedItem = null) where T : ITrackedItem;
 
         /// <summary>
         /// Stages all of the files associated with a tracked item
         /// </summary>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        bool Stage(TrackedItem trackedItem);
+        bool Stage(ITrackedItem trackedItem);
 
         /// <summary>
         /// Unstages all of the files associated with a tracked item
         /// </summary>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        bool Unstage(TrackedItem trackedItem);
+        bool Unstage(ITrackedItem trackedItem);
 
         /// <summary>
         /// Gets all of the current merge conflicts in the repo
@@ -190,7 +190,7 @@ namespace GitTracker.Interfaces
         /// <param name="currentCommitId"></param>
         /// <param name="newCommitId"></param>
         /// <returns></returns>
-        Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(TrackedItem trackedItem,
+        Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(ITrackedItem trackedItem,
             string currentCommitId = null, string newCommitId = null);
 
         /// <summary>
@@ -200,10 +200,10 @@ namespace GitTracker.Interfaces
         /// <param name="page"></param>
         /// <param name="pageSize"></param>
         /// <returns></returns>
-        TrackedItemHistory GetHistory(TrackedItem trackedItem, int page = 1, int pageSize = 10);
+        TrackedItemHistory GetHistory(ITrackedItem trackedItem, int page = 1, int pageSize = 10);
 
         /// <summary>
-        /// Gets paged commits for a TrackedItem Type
+        /// Gets paged commits for a ITrackedItem Type
         /// </summary>
         /// <param name="trackedItemType"></param>
         /// <param name="page"></param>
@@ -224,6 +224,6 @@ namespace GitTracker.Interfaces
         /// </summary>
         /// <param name="trackedItemTypes"></param>
         /// <returns></returns>
-        Task<IList<TrackedItem>> GetTrackedItemsFromSource(IList<Type> trackedItemTypes);
+        Task<IList<ITrackedItem>> GetTrackedItemsFromSource(IList<Type> trackedItemTypes);
     }
 }

@@ -68,11 +68,11 @@ namespace GitTracker.Tests
             _mockValueProvider.Setup(x => x.IsMatch(It.IsAny<PropertyInfo>()))
                 .Returns(false);
 
-            _mockFileProvider.Setup(x => x.UpsertFiles(It.IsAny<TrackedItem[]>()))
+            _mockFileProvider.Setup(x => x.UpsertFiles(It.IsAny<ITrackedItem[]>()))
                 .Returns(Task.FromResult(true));
 
             _mockPathProvider
-                .Setup(x => x.GetRelativeTrackedItemPath(It.IsAny<Type>(), It.IsAny<TrackedItem>()))
+                .Setup(x => x.GetRelativeTrackedItemPath(It.IsAny<Type>(), It.IsAny<ITrackedItem>()))
                 .Returns("/test/path.json");
 
             var diffs = new List<GitDiff>
@@ -96,7 +96,7 @@ namespace GitTracker.Tests
                 await _gitTrackingService.Update(blogPostToUpdate);
 
             Assert.NotEqual(default, result.ModifiedDate);
-            _mockUpdateOperation.Verify(x => x.Update(It.IsAny<TrackedItem>()), Times.Once);
+            _mockUpdateOperation.Verify(x => x.Update(It.IsAny<ITrackedItem>()), Times.Once);
         }
     }
 }
