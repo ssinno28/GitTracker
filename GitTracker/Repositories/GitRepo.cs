@@ -21,14 +21,16 @@ namespace GitTracker.Repositories
 
         private readonly GitConfig _gitConfig;
         private readonly ILogger<GitRepo> _logger;
+        private readonly ILocalPathFactory _localPathFactory;
 
-        public GitRepo(GitConfig gitConfig, ILoggerFactory loggerFactory)
+        public GitRepo(GitConfig gitConfig, ILoggerFactory loggerFactory, ILocalPathFactory localPathFactory)
         {
             _gitConfig = gitConfig;
+            _localPathFactory = localPathFactory;
             _logger = loggerFactory.CreateLogger<GitRepo>();
         }
 
-        private Repository LocalRepo => new Repository(_gitConfig.LocalPath);
+        private Repository LocalRepo => new Repository(_localPathFactory.GetLocalPath());
         private Repository RemoteRepo => new Repository(_gitConfig.RemotePath);
 
         public bool Pull(string email, CheckoutFileConflictStrategy strategy, string username = null)
@@ -39,12 +41,13 @@ namespace GitTracker.Repositories
                 return false;
             }
 
-            if (!Directory.Exists(_gitConfig.LocalPath) || !Repository.IsValid(_gitConfig.LocalPath))
+            string localPath = _localPathFactory.GetLocalPath();
+            if (!Directory.Exists(localPath) || !Repository.IsValid(localPath))
             {
-                Repository.Init(_gitConfig.LocalPath);
+                Repository.Init(localPath);
             }
 
-            using (var repo = new Repository(_gitConfig.LocalPath))
+            using (var repo = LocalRepo)
             {
                 if (repo.Network.Remotes["origin"] == null && string.IsNullOrEmpty(_gitConfig.RemotePath))
                 {
@@ -292,7 +295,7 @@ namespace GitTracker.Repositories
                 return false;
             }
 
-            using (var repo = new Repository(_gitConfig.LocalPath))
+            using (var repo = LocalRepo)
             {
                 if (repo.Network.Remotes["origin"] == null && string.IsNullOrEmpty(_gitConfig.RemotePath))
                 {
@@ -815,7 +818,7 @@ namespace GitTracker.Repositories
                 }
                 else
                 {
-                    finalFileContent = File.ReadAllText(Path.Combine(_gitConfig.LocalPath, patchEntryChange.Path));
+                    finalFileContent = File.ReadAllText(Path.Combine(_localPathFactory.GetLocalPath(), patchEntryChange.Path));
                 }
 
                 var diff = new GitDiff

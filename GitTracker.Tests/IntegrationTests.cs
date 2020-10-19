@@ -16,7 +16,7 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Sync_On_New_Repo()
         {
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
 
             await GitTrackingService.Sync(Email);
 
@@ -71,7 +71,7 @@ namespace GitTracker.Tests
             Assert.Contains(previousPath, blogPost.PreviousPaths);
             Assert.Equal("BlogPost/changed-name", newPath);
 
-            string fullPathToFile = Path.Combine(GitConfig.LocalPath, "BlogPost", "changed-name", $"{blogPost.Id}.json");
+            string fullPathToFile = Path.Combine(LocalPath, "BlogPost", "changed-name", $"{blogPost.Id}.json");
             Assert.True(File.Exists(fullPathToFile));
         }
 
@@ -111,7 +111,7 @@ namespace GitTracker.Tests
             GitRepo.Commit("My Second Commit", Email);
             await GitTrackingService.Publish(Email);
 
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
             await GitTrackingService.Sync(Email);
 
             var commits = GitRepo.GetCommits();
@@ -121,11 +121,11 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Sync_On_Repo_Merge_Conflict_Take_Theirs()
         {
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
 
             await GitTrackingService.Sync(Email);
 
-            GitConfig.LocalPath = LocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(LocalPath);
 
             _initialTrackedItem.Body = "My Test Body";
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
@@ -134,7 +134,7 @@ namespace GitTracker.Tests
             GitRepo.Commit("Repo 1 Second Commit", Email);
             await GitTrackingService.Publish(Email);
 
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
 
             _initialTrackedItem.Body = "My Test Body 2";
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
@@ -148,11 +148,11 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Sync_On_Repo_Merge_Conflict_Take_Ours()
         {
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
 
             await GitTrackingService.Sync(Email);
 
-            GitConfig.LocalPath = LocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(LocalPath);
 
             _initialTrackedItem.Body = "My Test Body";
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
@@ -161,7 +161,7 @@ namespace GitTracker.Tests
             GitRepo.Commit("Repo 1 Second Commit", Email);
             await GitTrackingService.Publish(Email);
 
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
 
             _initialTrackedItem.Body = "My Test Body 2";
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
@@ -175,11 +175,11 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Sync_On_Repo_Merge_Conflict_Take_Normal()
         {
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
 
             await GitTrackingService.Sync(Email);
 
-            GitConfig.LocalPath = LocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(LocalPath);
 
             _initialTrackedItem.SeoDescription = "My Test Seo Description";
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
@@ -188,7 +188,7 @@ namespace GitTracker.Tests
             GitRepo.Commit("Repo 1 Second Commit", Email);
             await GitTrackingService.Publish(Email);
 
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
 
             _initialTrackedItem.SeoDescription = "My Test Seo Description 2";
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
@@ -239,11 +239,11 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Sync_On_Repo_Merge_Conflict_Take_Normal_Value_Provider()
         {
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
 
             await GitTrackingService.Sync(Email);
 
-            GitConfig.LocalPath = LocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(LocalPath);
 
             string contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
             string filePath = Path.Combine(contentItemPath, "body.md");
@@ -255,7 +255,7 @@ namespace GitTracker.Tests
             GitRepo.Commit("Repo 1 Second Commit", Email);
             await GitTrackingService.Publish(Email);
 
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
 
             contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
             filePath = Path.Combine(contentItemPath, "body.md");
@@ -277,11 +277,11 @@ namespace GitTracker.Tests
         [Fact]
         public async Task Test_Sync_On_Repo_Merge_Conflict_Take_Normal_No_Value_Provider()
         {
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
 
             await GitTrackingService.Sync(Email);
 
-            GitConfig.LocalPath = LocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(LocalPath);
 
             string contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
             string filePath = Path.Combine(contentItemPath, "body.mds");
@@ -293,7 +293,7 @@ namespace GitTracker.Tests
             GitRepo.Commit("Repo 1 Second Commit", Email);
             await GitTrackingService.Publish(Email);
 
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
 
             contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
             filePath = Path.Combine(contentItemPath, "body.md");

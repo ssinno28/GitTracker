@@ -29,6 +29,7 @@ namespace GitTracker.Services
         private readonly IEnumerable<IDeleteOperation> _deleteOperations;
         private readonly GitConfig _gitConfig;
         private readonly ILogger<GitTrackingService> _logger;
+        private readonly ILocalPathFactory _localPathFactory;
 
         public GitTrackingService(
             ContentContractResolver contentContractResolver,
@@ -40,7 +41,8 @@ namespace GitTracker.Services
             IEnumerable<ICreateOperation> createOperations,
             IEnumerable<IDeleteOperation> deleteOperations,
             GitConfig gitConfig,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory, 
+            ILocalPathFactory localPathFactory)
         {
             _contentContractResolver = contentContractResolver;
             _valueProviders = valueProviders;
@@ -51,6 +53,7 @@ namespace GitTracker.Services
             _createOperations = createOperations;
             _deleteOperations = deleteOperations;
             _gitConfig = gitConfig;
+            _localPathFactory = localPathFactory;
             _logger = loggerFactory.CreateLogger<GitTrackingService>();
         }
 
@@ -133,9 +136,10 @@ namespace GitTracker.Services
 
         public async Task<bool> Sync(string email, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)
         {
-            if (!Directory.Exists(_gitConfig.LocalPath) || !Repository.IsValid(_gitConfig.LocalPath))
+            string localPath = _localPathFactory.GetLocalPath();
+            if (!Directory.Exists(localPath) || !Repository.IsValid(localPath))
             {
-                Repository.Init(_gitConfig.LocalPath);
+                Repository.Init(localPath);
             }
 
             var diffFromHead = _gitRepo.GetDiffFromHead();
@@ -357,6 +361,7 @@ namespace GitTracker.Services
         {
             var trackedItemConflicts = new List<TrackedItemConflict>();
             var mergeConflicts = _gitRepo.GetMergeConflicts();
+            string localPath = _localPathFactory.GetLocalPath();
 
             foreach (var conflictGrouping in mergeConflicts.GroupBy(x => Path.GetDirectoryName(x.Ours.Path)))
             {
@@ -402,13 +407,13 @@ namespace GitTracker.Services
                     var valueProviderConflict =
                         new ValueProviderConflict
                         {
-                            LocalPath = Path.Combine(_gitConfig.LocalPath, $"{conflict.Ours.Path}.LOCAL"),
-                            RemotePath = Path.Combine(_gitConfig.LocalPath, $"{conflict.Theirs.Path}.REMOTE")
+                            LocalPath = Path.Combine(localPath, $"{conflict.Ours.Path}.LOCAL"),
+                            RemotePath = Path.Combine(localPath, $"{conflict.Theirs.Path}.REMOTE")
                         };
 
                     if (!string.IsNullOrEmpty(fileContents.BaseFile))
                     {
-                        valueProviderConflict.BasePath = Path.Combine(_gitConfig.LocalPath, $"{conflict.Ancestor.Path}.BASE");
+                        valueProviderConflict.BasePath = Path.Combine(localPath, $"{conflict.Ancestor.Path}.BASE");
                         File.WriteAllText(valueProviderConflict.BasePath, fileContents.BaseFile);
                         propertyInfo.SetValue(trackedItemConflict.Ancestor, fileContents.BaseFile);
                     }

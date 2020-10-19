@@ -7,6 +7,7 @@ using GitTracker.Providers;
 using GitTracker.Tests.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
 namespace GitTracker.Tests
@@ -15,7 +16,8 @@ namespace GitTracker.Tests
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly BlogPost _blogPost;
-        private readonly string _localPath; 
+        private readonly string _localPath;
+        private readonly Mock<ILocalPathFactory> _localPathFactoryMock;
 
         public PathProviderTests()
         {
@@ -26,13 +28,11 @@ namespace GitTracker.Tests
                 = Path.GetFullPath(Path.Combine($"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}", @"..\..\..\settings"));
 
             _localPath = Path.Combine(settingsPath, "local-repo");
-            var gitConfig = new GitConfig
-            {
-                LocalPath = _localPath
-            };
+            _localPathFactoryMock = new Mock<ILocalPathFactory>();
+            _localPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(_localPath);
+            serviceCollection.Add(new ServiceDescriptor(typeof(ILocalPathFactory), _localPathFactoryMock.Object));
 
             serviceCollection.AddScoped<IPathProvider, PathProvider>();
-            serviceCollection.AddSingleton(gitConfig);
 
             _serviceProvider = serviceCollection.BuildServiceProvider();
 

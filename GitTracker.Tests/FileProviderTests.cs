@@ -18,6 +18,7 @@ namespace GitTracker.Tests
         private readonly IServiceProvider _serviceProvider;
         private readonly BlogPost _blogPost;
         private readonly string _localPath;
+        private readonly Mock<ILocalPathFactory> _localPathFactoryMock;
 
         public FileProviderTests()
         {
@@ -28,15 +29,13 @@ namespace GitTracker.Tests
                 = Path.GetFullPath(Path.Combine($"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}", @"..\..\..\settings"));
 
             _localPath = Path.Combine(settingsPath, "local-repo");
-            var gitConfig = new GitConfig
-            {
-                LocalPath = _localPath
-            };
+            _localPathFactoryMock = new Mock<ILocalPathFactory>();
+            _localPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(_localPath);
+            serviceCollection.Add(new ServiceDescriptor(typeof(ILocalPathFactory), _localPathFactoryMock.Object));
 
             serviceCollection.AddScoped<ContentContractResolver>();
             serviceCollection.AddScoped<IPathProvider, PathProvider>();
             serviceCollection.AddScoped<IFileProvider, FileProvider>();
-            serviceCollection.AddSingleton(gitConfig);
 
             _serviceProvider = serviceCollection.BuildServiceProvider();
             _blogPost = new BlogPost

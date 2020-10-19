@@ -8,11 +8,11 @@ namespace GitTracker.Providers
 {
     public class PathProvider : IPathProvider
     {
-        private readonly GitConfig _gitConfig;
+        private readonly ILocalPathFactory _localPathFactory;
 
-        public PathProvider(GitConfig gitConfig)
+        public PathProvider(ILocalPathFactory localPathFactory)
         {
-            _gitConfig = gitConfig;
+            _localPathFactory = localPathFactory;
         }
 
         public string GetTrackedItemPath(Type contentType, TrackedItem contentItem = null)
@@ -20,8 +20,8 @@ namespace GitTracker.Providers
             string contentTypeName = contentType.Name;
             var contentItemPath =
                           contentItem != null
-                              ? Path.Combine(_gitConfig.LocalPath, contentTypeName, contentItem.Name.MakeUrlFriendly())
-                              : Path.Combine(_gitConfig.LocalPath, contentTypeName);
+                              ? Path.Combine(_localPathFactory.GetLocalPath(), contentTypeName, contentItem.Name.MakeUrlFriendly())
+                              : Path.Combine(_localPathFactory.GetLocalPath(), contentTypeName);
 
             return contentItemPath;
         }

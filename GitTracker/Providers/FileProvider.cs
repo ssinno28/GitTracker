@@ -13,26 +13,26 @@ namespace GitTracker.Providers
 {
     public class FileProvider : IFileProvider
     {
-        private readonly GitConfig _gitConfig;
         private readonly IPathProvider _pathProvider;
         private readonly ContentContractResolver _contentContractResolver;
         private readonly ILogger<FileProvider> _logger;
+        private readonly ILocalPathFactory _localPathFactory;
 
         public FileProvider(
-            GitConfig gitConfig,
             IPathProvider pathProvider,
             ContentContractResolver contentContractResolver,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory, 
+            ILocalPathFactory localPathFactory)
         {
-            _gitConfig = gitConfig;
             _pathProvider = pathProvider;
             _contentContractResolver = contentContractResolver;
+            _localPathFactory = localPathFactory;
             _logger = loggerFactory.CreateLogger<FileProvider>();
         }
 
         public string GetFile(string path)
         {
-            string absolutePath = Path.Combine(_gitConfig.LocalPath, path);
+            string absolutePath = Path.Combine(_localPathFactory.GetLocalPath(), path);
             return File.ReadAllText(absolutePath);
         }
 

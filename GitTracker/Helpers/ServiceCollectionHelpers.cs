@@ -15,7 +15,6 @@ namespace GitTracker.Helpers
     public static class ServiceCollectionHelpers
     {
         public static IServiceCollection AddGitTracking(this IServiceCollection services, 
-            string localPath,
             string token,
             string remotePath,
             string webhookSecret,
@@ -25,7 +24,6 @@ namespace GitTracker.Helpers
             {
                 Token = token,
                 RemotePath = remotePath,
-                LocalPath = localPath,
                 WebhookSecret = webhookSecret,
                 TrackedTypes = trackedTypes
             };

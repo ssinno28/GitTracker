@@ -14,14 +14,13 @@ To start you will need to wire up the appropriate services in DI:
 var contentTypes = new List<Type> { typeof(BlogPost), typeof(Tag), typeof(Category) };
 var serviceCollection = new ServiceCollection()
                 .AddLogging(x => x.AddConsole())
-                .AddGitTracking(LocalPath, "test", RemotePath, string.Empty, contentTypes);
+                .AddGitTracking("test", RemotePath, string.Empty, contentTypes);
 ```
 
 The `AddGitTracking` extension method takes these arguments:
 
 ```c#
  public static IServiceCollection AddGitTracking(this IServiceCollection services, 
-            string localPath,
             string token,
             string remotePath,
             string webhookSecret,
@@ -29,6 +28,30 @@ The `AddGitTracking` extension method takes these arguments:
 ```
 
 The list of tracked types are POCO objects that inherit from `TrackedItem`. 
+
+You'll want to create an instance of `ILocalPathFactory` as well, this will return your local path for the git repo. Here is an example:
+
+```c#
+    public class LocalPathFactory : ILocalPathFactory
+    {
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public LocalPathFactory(IHttpContextAccessor httpContextAccessor)
+        {
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        public string GetLocalPath()
+        {
+            string userId = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Name).Value;
+            return $"fake-path/{userId}";
+        }
+    }
+```
+
+
+
+You'll most likely want to have a different path for every user that uses your system.
 
 It is also very important to wire up your CRUD operations using the `ICreateOperation`, `IDeleteOperation` and `IUpdateOperation` interfaces. Whenever an item is created, updated or deleted in the local git repository, the appropriate CRUD operation is called to also apply that change to whatever database you are using. 
 

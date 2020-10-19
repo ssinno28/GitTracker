@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using GitTracker.Interfaces;
@@ -25,6 +26,7 @@ namespace GitTracker.Tests
         private readonly Mock<IUpdateOperation> _mockUpdateOperation;
         private readonly Mock<ICreateOperation> _mockCreateOperation;
         private readonly Mock<IDeleteOperation> _mockDeleteOperation;
+        private readonly Mock<ILocalPathFactory> _localPathFactoryMock;
 
         public GitTrackingServiceTests()
         {
@@ -36,7 +38,6 @@ namespace GitTracker.Tests
             services.AddScoped<IGitTrackingService, GitTrackingService>();
             services.AddSingleton(new GitConfig
             {
-                LocalPath = string.Empty,
                 RemotePath = string.Empty,
                 Token = string.Empty,
                 TrackedTypes = contentTypes,
@@ -49,8 +50,17 @@ namespace GitTracker.Tests
             _mockPathProvider = new Mock<IPathProvider>();
             _mockUpdateOperation = new Mock<IUpdateOperation>();
             _mockCreateOperation = new Mock<ICreateOperation>();
-            _mockDeleteOperation = new Mock<IDeleteOperation>();
+            _mockDeleteOperation = new Mock<IDeleteOperation>(); 
+            _localPathFactoryMock = new Mock<ILocalPathFactory>();
 
+            string settingsPath
+                = Path.GetFullPath(Path.Combine($"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}", @"..\..\..\settings"));
+
+            string localPath = Path.Combine(settingsPath, "local-repo");
+
+            _localPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(localPath);
+
+            services.Add(new ServiceDescriptor(typeof(ILocalPathFactory), _localPathFactoryMock.Object));
             services.Add(new ServiceDescriptor(typeof(IValueProvider), _mockValueProvider.Object));
             services.Add(new ServiceDescriptor(typeof(IGitRepo), _mockGitRepo.Object));
             services.Add(new ServiceDescriptor(typeof(IFileProvider), _mockFileProvider.Object));

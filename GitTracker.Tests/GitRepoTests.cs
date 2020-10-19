@@ -43,7 +43,7 @@ namespace GitTracker.Tests
         {
             GitRepo.Push(Email);
 
-            GitConfig.LocalPath = SecondLocalPath;
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
 
             bool result = GitRepo.Pull(Email, CheckoutFileConflictStrategy.Normal);
             Assert.True(result);

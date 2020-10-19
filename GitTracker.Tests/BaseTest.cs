@@ -12,8 +12,6 @@ using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
-using LogLevel = LibGit2Sharp.LogLevel;
-using Tag = LibGit2Sharp.Tag;
 
 namespace GitTracker.Tests
 {
@@ -34,6 +32,7 @@ namespace GitTracker.Tests
         protected Mock<IUpdateOperation> UpdateOperationMock;
         protected Mock<IDeleteOperation> DeleteOperationMock;
         protected Mock<ICreateOperation> CreateOperationMock;
+        protected Mock<ILocalPathFactory> LocalPathFactoryMock;
 
         public BaseTest()
         {
@@ -47,7 +46,7 @@ namespace GitTracker.Tests
             var contentTypes = new List<Type> { typeof(BlogPost), typeof(Models.Tag), typeof(Category) };
             var serviceCollection = new ServiceCollection()
                 .AddLogging(x => x.AddConsole())
-                .AddGitTracking(LocalPath, "test", RemotePath, string.Empty, contentTypes);
+                .AddGitTracking("test", RemotePath, string.Empty, contentTypes);
 
             UpdateOperationMock = new Mock<IUpdateOperation>();
             UpdateOperationMock.Setup(x => x.IsMatch(It.IsAny<Type>())).Returns(true);
@@ -61,9 +60,13 @@ namespace GitTracker.Tests
             DeleteOperationMock.Setup(x => x.IsMatch(It.IsAny<Type>())).Returns(true);
             DeleteOperationMock.Setup(x => x.Delete(It.IsAny<TrackedItem>())).Returns(Task.CompletedTask);
 
+            LocalPathFactoryMock = new Mock<ILocalPathFactory>();
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(LocalPath);
+
             serviceCollection.Add(new ServiceDescriptor(typeof(IUpdateOperation), UpdateOperationMock.Object));
             serviceCollection.Add(new ServiceDescriptor(typeof(IDeleteOperation), DeleteOperationMock.Object));
             serviceCollection.Add(new ServiceDescriptor(typeof(ICreateOperation), CreateOperationMock.Object));
+            serviceCollection.Add(new ServiceDescriptor(typeof(ILocalPathFactory), LocalPathFactoryMock.Object));
 
             ServiceProvider = serviceCollection.BuildServiceProvider();
 
