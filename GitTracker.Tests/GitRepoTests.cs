@@ -164,5 +164,18 @@ namespace GitTracker.Tests
             var diff = GitRepo.GetDiffFromHead(new List<string> { "fileToCommit.txt" });
             Assert.Equal(1, diff.Count);
         }
+
+        [Fact]
+        public void Test_Repository_Exists()
+        {
+            Assert.True(GitRepo.RepositoryExists());
+        } 
+        
+        [Fact]
+        public void Test_Repository_NotExists()
+        {
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns("fake-path");
+            Assert.False(GitRepo.RepositoryExists());
+        }
     }
 }

@@ -984,5 +984,11 @@ namespace GitTracker.Repositories
 
             return true;
         }
+
+        public bool RepositoryExists()
+        {
+            string localPath = _localPathFactory.GetLocalPath();
+            return Directory.Exists(localPath) && Repository.IsValid(localPath);
+        }
     }
 }

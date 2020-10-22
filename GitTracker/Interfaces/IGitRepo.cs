@@ -36,5 +36,6 @@ namespace GitTracker.Interfaces
             string userName = null);
 
         // string Stash(string message, string email, string userName = null);
+        bool RepositoryExists();
     }
 }
