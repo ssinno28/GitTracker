@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using GitTracker.Helpers;
 using GitTracker.Interfaces;
 using GitTracker.Models;
 using GitTracker.Serializer;
@@ -107,6 +108,13 @@ namespace GitTracker.Tests
 
             Assert.NotEqual(default, result.ModifiedDate);
             _mockUpdateOperation.Verify(x => x.Update(It.IsAny<TrackedItem>()), Times.Once);
+        }
+
+        [Fact]
+        public void Test_Make_Url_Friendly()
+        {
+            string safeName = "Docklands Enterprise Ltd.".MakeUrlFriendly();
+            Assert.Equal("docklands-enterprise-ltd", safeName);
         }
     }
 }
