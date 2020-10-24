@@ -467,6 +467,15 @@ namespace GitTracker.Tests
             await Assert.ThrowsAnyAsync<Exception>(async () => await GitTrackingService.Sync(Email));
         }
 
+        [Fact]
+        public async Task Test_DateModified_Unmodified()
+        {
+            DateTimeOffset currentModifedDate = _initialTrackedItem.ModifiedDate;
+            BlogPost result = await GitTrackingService.Update(_initialTrackedItem);
+
+            Assert.Equal(currentModifedDate, _initialTrackedItem.ModifiedDate);
+        }
+
         public async Task InitializeAsync()
         {
             _initialTrackedItem = await GitTrackingService.Create(new BlogPost
