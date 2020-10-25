@@ -41,7 +41,7 @@ namespace GitTracker.Services
             IEnumerable<ICreateOperation> createOperations,
             IEnumerable<IDeleteOperation> deleteOperations,
             GitConfig gitConfig,
-            ILoggerFactory loggerFactory, 
+            ILoggerFactory loggerFactory,
             ILocalPathFactory localPathFactory)
         {
             _contentContractResolver = contentContractResolver;
@@ -60,8 +60,15 @@ namespace GitTracker.Services
         public async Task<bool> Publish(string email,
             CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)
         {
-            var result = await Sync(email, strategy, userName);
-            if (!result) return false;
+            try
+            {
+                var result = await Sync(email, strategy, userName);
+                if (!result) return false;
+            }
+            catch (MergeFetchHeadNotFoundException ex)
+            {
+                // swallowing for now
+            }
 
             return _gitRepo.Push(email, userName);
         }

@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using LibGit2Sharp;
 using Xunit;
 
@@ -177,5 +179,13 @@ namespace GitTracker.Tests
             LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns("fake-path");
             Assert.False(GitRepo.RepositoryExists());
         }
+
+        [Fact]
+        public void Test_Pull_On_No_Remote_Branch()
+        {
+            GitRepo.CreateBranch("my-test-branch");
+            Assert.Throws<MergeFetchHeadNotFoundException>(() => GitRepo.Pull(Email, CheckoutFileConflictStrategy.Normal));
+        }
+
     }
 }

@@ -78,11 +78,15 @@ namespace GitTracker.Tests
             if (!Directory.Exists(LocalPath) || !Repository.IsValid(LocalPath))
             {
                 Repository.Init(LocalPath);
+                var repo = new Repository(LocalPath);
+                repo.Network.Remotes.Add("origin", RemotePath);
             }  
             
             if (!Directory.Exists(SecondLocalPath) || !Repository.IsValid(SecondLocalPath))
             {
                 Repository.Init(SecondLocalPath);
+                var repo = new Repository(SecondLocalPath);
+                repo.Network.Remotes.Add("origin", RemotePath);
             }
 
             GitRepo = ServiceProvider.GetService<IGitRepo>();

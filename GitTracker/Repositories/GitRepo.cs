@@ -82,33 +82,25 @@ namespace GitTracker.Repositories
                 var signature = new Signature(
                     new Identity(username ?? email, email), DateTimeOffset.Now);
 
-                try
+                // Pull
+                Commands.Pull(repo, signature, options);
+
+                // if merge strategy is theirs or ours then we stage and commit for them
+                if (repo.Index.Conflicts.Any() && (strategy == CheckoutFileConflictStrategy.Theirs || strategy == CheckoutFileConflictStrategy.Ours))
                 {
-                    // Pull
-                    Commands.Pull(repo, signature, options);
-
-                    // if merge strategy is theirs or ours then we stage and commit for them
-                    if (repo.Index.Conflicts.Any() && (strategy == CheckoutFileConflictStrategy.Theirs || strategy == CheckoutFileConflictStrategy.Ours))
+                    string commitMsg = GetMergeCommitMessage(repo.Index.Conflicts);
+                    foreach (var indexConflict in repo.Index.Conflicts)
                     {
-                        string commitMsg = GetMergeCommitMessage(repo.Index.Conflicts);
-                        foreach (var indexConflict in repo.Index.Conflicts)
-                        {
-                            Commands.Stage(repo,
-                                strategy == CheckoutFileConflictStrategy.Theirs
-                                    ? indexConflict.Theirs.Path
-                                    : indexConflict.Ours.Path);
-                        }
+                        Commands.Stage(repo,
+                            strategy == CheckoutFileConflictStrategy.Theirs
+                                ? indexConflict.Theirs.Path
+                                : indexConflict.Ours.Path);
+                    }
 
-                        Commit(commitMsg, email);
-                    }
-                    else if (repo.Index.Conflicts.Any())
-                    {
-                        return false;
-                    }
+                    Commit(commitMsg, email);
                 }
-                catch (Exception ex)
+                else if (repo.Index.Conflicts.Any())
                 {
-                    _logger.LogError(ex, $"Could not pull from repo {_gitConfig.RemotePath} error: {ex}");
                     return false;
                 }
             }

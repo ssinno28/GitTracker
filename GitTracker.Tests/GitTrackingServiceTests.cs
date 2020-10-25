@@ -9,6 +9,7 @@ using GitTracker.Models;
 using GitTracker.Serializer;
 using GitTracker.Services;
 using GitTracker.Tests.Models;
+using LibGit2Sharp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -51,7 +52,7 @@ namespace GitTracker.Tests
             _mockPathProvider = new Mock<IPathProvider>();
             _mockUpdateOperation = new Mock<IUpdateOperation>();
             _mockCreateOperation = new Mock<ICreateOperation>();
-            _mockDeleteOperation = new Mock<IDeleteOperation>(); 
+            _mockDeleteOperation = new Mock<IDeleteOperation>();
             _localPathFactoryMock = new Mock<ILocalPathFactory>();
 
             string settingsPath
@@ -108,6 +109,41 @@ namespace GitTracker.Tests
 
             Assert.NotEqual(default, result.ModifiedDate);
             _mockUpdateOperation.Verify(x => x.Update(It.IsAny<TrackedItem>()), Times.Once);
+        }
+
+        [Fact]
+        public void Test_Publish_Does_Not_Catch_Generic_Exception()
+        {
+            _mockGitRepo.Setup(x =>
+                    x.Pull(It.IsAny<string>(), It.IsAny<CheckoutFileConflictStrategy>(), It.IsAny<string>()))
+                .Throws<Exception>();
+
+
+            Assert.ThrowsAnyAsync<Exception>(() => _gitTrackingService.Sync(It.IsAny<string>(), It.IsAny<CheckoutFileConflictStrategy>(), It.IsAny<string>()));
+        }
+
+        [Fact]
+        public async Task Test_Publish_Throws_No_Exception_When_No_Branch_To_Pull()
+        {
+            _mockGitRepo.Setup(x =>
+                    x.Pull(It.IsAny<string>(), It.IsAny<CheckoutFileConflictStrategy>(), It.IsAny<string>()))
+                .Throws<MergeFetchHeadNotFoundException>();
+            
+            _mockGitRepo.Setup(x =>
+                    x.Push(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            _mockGitRepo.Setup(x => x.GetCommits(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IList<string>>()))
+                .Returns(new List<GitCommit>());
+
+            var diffs = new List<GitDiff>();
+            _mockGitRepo.Setup(x => x.GetDiffFromHead(It.IsAny<IList<string>>()))
+                .Returns(diffs);
+
+            var result =
+                await _gitTrackingService.Publish(It.IsAny<string>(), It.IsAny<CheckoutFileConflictStrategy>(), It.IsAny<string>());
+
+            Assert.True(result);
         }
 
         [Fact]
