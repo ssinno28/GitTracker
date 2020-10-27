@@ -287,6 +287,7 @@ namespace GitTracker.Tests
             string filePath = Path.Combine(contentItemPath, "body.mds");
 
             await File.WriteAllTextAsync(filePath, "My Test Body");
+            _initialTrackedItem.Category = "My test category";
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
 
             GitTrackingService.Stage(_initialTrackedItem);
@@ -299,6 +300,7 @@ namespace GitTracker.Tests
             filePath = Path.Combine(contentItemPath, "body.md");
 
             await File.WriteAllTextAsync(filePath, "My Test Body 2");
+            _initialTrackedItem.Category = "My test category 2";
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
 
             GitTrackingService.Stage(_initialTrackedItem);
@@ -484,7 +486,10 @@ namespace GitTracker.Tests
             });
 
             GitTrackingService.Stage(_initialTrackedItem);
-            GitRepo.Commit("My First Commit", Email);
+            var trackedItemsCommitted = 
+                await GitTrackingService.Commit("My First Commit", Email);
+            _initialTrackedItem = (BlogPost) trackedItemsCommitted.First();
+
             GitRepo.Push(Email);
         }
 

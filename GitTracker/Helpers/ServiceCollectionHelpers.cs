@@ -8,6 +8,7 @@ using GitTracker.Providers;
 using GitTracker.Repositories;
 using GitTracker.Serializer;
 using GitTracker.Services;
+using GitTracker.ValueProviders;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GitTracker.Helpers

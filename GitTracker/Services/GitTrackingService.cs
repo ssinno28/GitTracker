@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -122,7 +121,7 @@ namespace GitTracker.Services
         //}
 
         public async Task<bool> MergeBranch(string branchName, string email,
-            CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)
+            CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string name = null)
         {
             var diffFromHead = _gitRepo.GetDiffFromHead();
             if (diffFromHead.Any())
@@ -131,7 +130,7 @@ namespace GitTracker.Services
             }
 
             string currentCommitId = _gitRepo.GetCurrentCommitId();
-            if (!_gitRepo.MergeBranch(branchName, email, strategy, userName)) return false;
+            if (!_gitRepo.MergeBranch(branchName, email, strategy, name)) return false;
 
             string newCommitId = _gitRepo.GetCurrentCommitId();
 
@@ -141,7 +140,7 @@ namespace GitTracker.Services
             return true;
         }
 
-        public async Task<bool> Sync(string email, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null)
+        public async Task<bool> Sync(string email, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string name = null)
         {
             string localPath = _localPathFactory.GetLocalPath();
             if (!Directory.Exists(localPath) || !Repository.IsValid(localPath))
@@ -159,7 +158,7 @@ namespace GitTracker.Services
             var commits = _gitRepo.GetCommits();
             if (!commits.Any())
             {
-                if (!_gitRepo.Pull(email, strategy, userName)) return false;
+                if (!_gitRepo.Pull(email, strategy, name)) return false;
 
                 var files = _fileProvider.GetFiles(_gitConfig.TrackedTypes);
                 foreach (var fileContent in files)
@@ -173,7 +172,7 @@ namespace GitTracker.Services
 
             string currentCommitId = _gitRepo.GetCurrentCommitId();
 
-            if (!_gitRepo.Pull(email, strategy, userName)) return false;
+            if (!_gitRepo.Pull(email, strategy, name)) return false;
 
             // get new commit id
             string newCommitId = _gitRepo.GetCurrentCommitId();
@@ -188,10 +187,13 @@ namespace GitTracker.Services
 
         private async Task PerformOpsBasedOnDiff(IList<GitDiff> diff, string currentCommitId)
         {
-            foreach (var gitDiff in diff.Where(x => x.Path.EndsWith(".json")))
+            foreach (var gitDiff in diff)
             {
-                if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
+                // always perform update when a non guid file is created/updated/deleted
+                if (!gitDiff.Path.IsTrackedItemJson())
                 {
+                    var modifiedItem = await GetTrackedItem(gitDiff.Path);
+                    await PerformUpdate(modifiedItem);
                     continue;
                 }
 
@@ -379,7 +381,7 @@ namespace GitTracker.Services
 
                 foreach (var conflict in conflictGrouping.Where(x => x.Ours.Path.EndsWith(".json")))
                 {
-                    if (!Guid.TryParse(Path.GetFileNameWithoutExtension(conflict.Ours.Path), out _))
+                    if (!conflict.Ours.Path.IsTrackedItemJson())
                     {
                         continue;
                     }
@@ -402,6 +404,14 @@ namespace GitTracker.Services
 
                 foreach (var conflict in valueProviderDiffs)
                 {
+                    if (trackedItemConflict.Ours == null)
+                    {
+                        string trackedItemJsonPath = _fileProvider.GetTrackedItemJsonForPath(conflict.Ours.Path);
+                        trackedItemConflict.Ours = await GetTrackedItem(trackedItemJsonPath);
+                        trackedItemConflict.Theirs = await GetTrackedItem(trackedItemJsonPath);
+                        trackedItemConflict.Ancestor = await GetTrackedItem(trackedItemJsonPath);
+                    }
+
                     var fileContents =
                         _gitRepo.GetDiff3Files(conflict.Ours.Path, conflict.Theirs.Path, conflict.Ancestor?.Path);
 
@@ -469,6 +479,11 @@ namespace GitTracker.Services
 
         private async Task<TrackedItem> GetTrackedItem(string path)
         {
+            if (!path.IsTrackedItemJson())
+            {
+                path = _fileProvider.GetTrackedItemJsonForPath(path);
+            }
+
             string fileContent = _fileProvider.GetFile(path);
             var trackedItem = await DeserializeContentItem(fileContent);
 
@@ -490,7 +505,8 @@ namespace GitTracker.Services
 
                 if (valueProvider != null)
                 {
-                    propertyInfo.SetValue(trackedItem, await valueProvider.GetValue(trackedItem, propertyInfo));
+                    var value = await valueProvider.GetValue(trackedItem, propertyInfo);
+                    propertyInfo.SetValue(trackedItem, value);
                 }
             }
         }
@@ -502,7 +518,7 @@ namespace GitTracker.Services
             await SetNonJsonValues(trackedItem);
 
             trackedItem.Id = Guid.NewGuid().ToString();
-            trackedItem.CreatedDate = DateTimeOffset.Now;
+            // trackedItem.CreatedDate = DateTimeOffset.Now;
 
             await _fileProvider.UpsertFiles(trackedItem);
             await PerformCreate(trackedItem);
@@ -555,9 +571,6 @@ namespace GitTracker.Services
             var diff = _gitRepo.GetDiffFromHead(new List<string> { trackedItemPath });
             if (diff.Any())
             {
-                trackedItem.ModifiedDate = DateTimeOffset.Now;
-                await _fileProvider.UpsertFiles(trackedItem);
-
                 await PerformUpdate(trackedItem);
             }
 
@@ -576,6 +589,25 @@ namespace GitTracker.Services
                 trackedItems.Add(trackedItem);
             }
 
+            return trackedItems;
+        }
+
+        public async Task<IList<TrackedItem>> Commit(string message, string email, string name = null)
+        {
+            var stagedFiles = _gitRepo.GetStagedItems();
+            string commitId = _gitRepo.Commit(message, email, name);
+
+            IList<TrackedItem> trackedItems = new List<TrackedItem>();
+            foreach (var stagedFile in stagedFiles)
+            {
+                var trackedItem = await GetTrackedItem(stagedFile);
+                if (trackedItems.Any(x => x.Id.Equals(trackedItem.Id)))
+                {
+                    continue;
+                }
+
+                trackedItems.Add(trackedItem);
+            }
             return trackedItems;
         }
 

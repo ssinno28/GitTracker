@@ -15,9 +15,9 @@ namespace GitTracker.Interfaces
         /// </summary>
         /// <param name="email"></param>
         /// <param name="strategy"></param>
-        /// <param name="userName"></param>
+        /// <param name="name"></param>
         /// <returns></returns>
-        Task<bool> Sync(string email, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null);
+        Task<bool> Sync(string email, CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string name = null);
 
         /// <summary>
         /// Merges the branch specified into the current branch. Returns false if there are conflicts.
@@ -25,10 +25,10 @@ namespace GitTracker.Interfaces
         /// <param name="branchName"></param>
         /// <param name="email"></param>
         /// <param name="strategy"></param>
-        /// <param name="userName"></param>
+        /// <param name="name"></param>
         /// <returns></returns>
         Task<bool> MergeBranch(string branchName, string email,
-            CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string userName = null);
+            CheckoutFileConflictStrategy strategy = CheckoutFileConflictStrategy.Normal, string name = null);
 
         /// <summary>
         /// Stashing changes for the specified tracked items
@@ -225,5 +225,14 @@ namespace GitTracker.Interfaces
         /// <param name="trackedItemTypes"></param>
         /// <returns></returns>
         Task<IList<TrackedItem>> GetTrackedItemsFromSource(IList<Type> trackedItemTypes);
+
+        /// <summary>
+        /// Commits all current work and returns the tracked items that were committed
+        /// </summary>
+        /// <param name="email"></param>
+        /// <param name="message"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        Task<IList<TrackedItem>> Commit(string message, string email, string name = null);
     }
 }

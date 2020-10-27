@@ -107,7 +107,6 @@ namespace GitTracker.Tests
             var result =
                 await _gitTrackingService.Update(blogPostToUpdate);
 
-            Assert.NotEqual(default, result.ModifiedDate);
             _mockUpdateOperation.Verify(x => x.Update(It.IsAny<TrackedItem>()), Times.Once);
         }
 

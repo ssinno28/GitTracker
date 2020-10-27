@@ -16,6 +16,7 @@ namespace GitTracker.Interfaces
         bool Push(string email, string username = null);
         bool Reset(ResetMode resetMode, string commitId = null);
         List<GitCommit> GetCommits(int page = 1, int take = 10, IList<string> paths = null);
+        IList<GitCommit> GetAllCommitsForPath(string path);
         int Count(IList<string> paths = null);
         IList<GitDiff> GetDiff(IList<string> paths, string id, string endId = null);
         IList<GitDiff> GetDiffFromHead(IList<string> paths = null);

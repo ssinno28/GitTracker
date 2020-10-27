@@ -12,5 +12,6 @@ namespace GitTracker.Interfaces
         Task<bool> DeleteFiles(params TrackedItem[] trackedItems);
         Task<bool> UpsertFiles(params TrackedItem[] trackedItems);
         Task<bool> MoveFile(string newName, TrackedItem trackedItem);
+        string GetTrackedItemJsonForPath(string path);
     }
 }

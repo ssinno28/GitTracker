@@ -117,7 +117,6 @@ namespace GitTracker.Repositories
                 commits.AddRange(repo.Stashes.Select(x => x.Index));
                 var ourCommit =
                     commits.First(x => x.Id.ToString().Equals(commitId));
-
                 try
                 {
                     var ourBlob = ourCommit[path].Target as Blob;
@@ -929,6 +928,26 @@ namespace GitTracker.Repositories
             }
 
             return commits;
+        }
+
+        public IList<GitCommit> GetAllCommitsForPath(string path)
+        {
+            List<GitCommit> commits = new List<GitCommit>();
+            using (var repo = LocalRepo)
+            {
+                foreach (var logEntry in repo.Commits.QueryBy(path))
+                {
+                    commits.Add(new GitCommit
+                    {
+                        Author = logEntry.Commit.Author.Name,
+                        Date = logEntry.Commit.Author.When,
+                        Message = logEntry.Commit.Message,
+                        Id = logEntry.Commit.Id.ToString()
+                    });
+                }
+            }
+
+            return commits.OrderByDescending(x => x.Date).ToList();
         }
 
         public bool Unstage(params string[] filePaths)

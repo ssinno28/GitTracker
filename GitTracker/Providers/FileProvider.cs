@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using GitTracker.Helpers;
 using GitTracker.Interfaces;
 using GitTracker.Models;
 using GitTracker.Serializer;
@@ -35,6 +36,18 @@ namespace GitTracker.Providers
             string absolutePath = Path.Combine(_localPathFactory.GetLocalPath(), path);
             return File.ReadAllText(absolutePath);
         }
+        
+        public string GetTrackedItemJsonForPath(string path)
+        {
+            string absolutePath = Path.Combine(_localPathFactory.GetLocalPath(), path);
+            string directory = Path.GetDirectoryName(absolutePath);
+
+            var trackedItemPath =
+                Directory.GetFiles(directory, "*.json", SearchOption.AllDirectories)
+                    .Single(x => x.IsTrackedItemJson());
+
+            return trackedItemPath;
+        }
 
         public IList<string> GetFiles(IList<Type> contentTypes)
         {
@@ -51,7 +64,7 @@ namespace GitTracker.Providers
 
                 paths.ForEach(x =>
                 {
-                    if (Guid.TryParse(Path.GetFileNameWithoutExtension(x), out _))
+                    if (x.IsTrackedItemJson())
                     {
                         filePaths.Add(x);
                     }

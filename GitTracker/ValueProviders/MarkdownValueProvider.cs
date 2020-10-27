@@ -6,7 +6,7 @@ using GitTracker.Helpers;
 using GitTracker.Interfaces;
 using GitTracker.Models;
 
-namespace GitTracker.Providers
+namespace GitTracker.ValueProviders
 {
     public class MarkdownValueProvider : IValueProvider
     {
