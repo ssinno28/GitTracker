@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -29,6 +30,7 @@ namespace GitTracker.Services
         private readonly GitConfig _gitConfig;
         private readonly ILogger<GitTrackingService> _logger;
         private readonly ILocalPathFactory _localPathFactory;
+        private readonly IFileSystem _fileSystem;
 
         public GitTrackingService(
             ContentContractResolver contentContractResolver,
@@ -41,7 +43,8 @@ namespace GitTracker.Services
             IEnumerable<IDeleteOperation> deleteOperations,
             GitConfig gitConfig,
             ILoggerFactory loggerFactory,
-            ILocalPathFactory localPathFactory)
+            ILocalPathFactory localPathFactory, 
+            IFileSystem fileSystem)
         {
             _contentContractResolver = contentContractResolver;
             _valueProviders = valueProviders;
@@ -53,6 +56,7 @@ namespace GitTracker.Services
             _deleteOperations = deleteOperations;
             _gitConfig = gitConfig;
             _localPathFactory = localPathFactory;
+            _fileSystem = fileSystem;
             _logger = loggerFactory.CreateLogger<GitTrackingService>();
         }
 
@@ -518,7 +522,6 @@ namespace GitTracker.Services
             await SetNonJsonValues(trackedItem);
 
             trackedItem.Id = Guid.NewGuid().ToString();
-            // trackedItem.CreatedDate = DateTimeOffset.Now;
 
             await _fileProvider.UpsertFiles(trackedItem);
             await PerformCreate(trackedItem);
@@ -656,7 +659,7 @@ namespace GitTracker.Services
         private void CheckNameExists(Type trackedItemType, TrackedItem trackedItem)
         {
             string trackedItemDirectory = _pathProvider.GetTrackedItemPath(trackedItemType, trackedItem);
-            if (Directory.Exists(trackedItemDirectory))
+            if (_fileSystem.Directory.Exists(trackedItemDirectory))
             {
                 throw new Exception("A tracked item with this name already exists!");
             }

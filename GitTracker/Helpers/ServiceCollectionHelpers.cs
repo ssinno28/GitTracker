@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Reflection;
 using GitTracker.Interfaces;
@@ -34,6 +35,7 @@ namespace GitTracker.Helpers
             services.AddScoped<IPathProvider, PathProvider>();
             services.AddScoped<IFileProvider, FileProvider>();
             services.AddScoped<IGitTrackingService, GitTrackingService>();
+            services.AddScoped<IFileSystem, FileSystem>();
             services.AddScoped<ContentContractResolver>();
 
             var assembly = Assembly.GetAssembly(typeof(MarkdownValueProvider));

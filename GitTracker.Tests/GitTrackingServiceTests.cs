@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 using System.Reflection;
 using System.Threading.Tasks;
 using GitTracker.Helpers;
@@ -29,6 +30,7 @@ namespace GitTracker.Tests
         private readonly Mock<ICreateOperation> _mockCreateOperation;
         private readonly Mock<IDeleteOperation> _mockDeleteOperation;
         private readonly Mock<ILocalPathFactory> _localPathFactoryMock;
+        private readonly Mock<IFileSystem> _mockFileSystem;
 
         public GitTrackingServiceTests()
         {
@@ -54,6 +56,7 @@ namespace GitTracker.Tests
             _mockCreateOperation = new Mock<ICreateOperation>();
             _mockDeleteOperation = new Mock<IDeleteOperation>();
             _localPathFactoryMock = new Mock<ILocalPathFactory>();
+            _mockFileSystem = new Mock<IFileSystem>();
 
             string settingsPath
                 = Path.GetFullPath(Path.Combine($"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}", @"..\..\..\settings"));
@@ -70,6 +73,7 @@ namespace GitTracker.Tests
             services.Add(new ServiceDescriptor(typeof(IUpdateOperation), _mockUpdateOperation.Object));
             services.Add(new ServiceDescriptor(typeof(ICreateOperation), _mockCreateOperation.Object));
             services.Add(new ServiceDescriptor(typeof(IDeleteOperation), _mockDeleteOperation.Object));
+            services.Add(new ServiceDescriptor(typeof(IFileSystem), _mockFileSystem.Object));
 
             _gitTrackingService = services.BuildServiceProvider().GetService<IGitTrackingService>();
         }
@@ -150,6 +154,20 @@ namespace GitTracker.Tests
         {
             string safeName = "Docklands Enterprise Ltd.".MakeUrlFriendly();
             Assert.Equal("docklands-enterprise-ltd", safeName);
+        }
+
+        [Fact]
+        public async Task Test_Name_Already_Exists()
+        {
+            _mockFileSystem
+                .Setup(x => x.Directory.Exists(It.IsAny<string>()))
+                .Returns(true);
+
+            await Assert.ThrowsAnyAsync<Exception>(async () =>
+                await _gitTrackingService.Create(new BlogPost
+                {
+                    Name = "Test Blog Post"
+                }));
         }
     }
 }

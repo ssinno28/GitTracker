@@ -33,7 +33,7 @@ namespace GitTracker.ValueProviders
             var commits =
                 _gitRepo.GetAllCommitsForPath(relativeTrackedItemPath);
 
-            return !commits.Any() ? default(DateTimeOffset) : commits.Last().Date;
+            return !commits.Any() ? default(DateTimeOffset) : commits.Min(x => x.Date);
         }
     }
 }

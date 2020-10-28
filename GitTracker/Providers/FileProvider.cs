@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Threading.Tasks;
 using GitTracker.Helpers;
@@ -18,23 +19,25 @@ namespace GitTracker.Providers
         private readonly ContentContractResolver _contentContractResolver;
         private readonly ILogger<FileProvider> _logger;
         private readonly ILocalPathFactory _localPathFactory;
+        private readonly IFileSystem _fileSystem;
 
         public FileProvider(
             IPathProvider pathProvider,
             ContentContractResolver contentContractResolver,
             ILoggerFactory loggerFactory, 
-            ILocalPathFactory localPathFactory)
+            ILocalPathFactory localPathFactory, IFileSystem fileSystem)
         {
             _pathProvider = pathProvider;
             _contentContractResolver = contentContractResolver;
             _localPathFactory = localPathFactory;
+            _fileSystem = fileSystem;
             _logger = loggerFactory.CreateLogger<FileProvider>();
         }
 
         public string GetFile(string path)
         {
             string absolutePath = Path.Combine(_localPathFactory.GetLocalPath(), path);
-            return File.ReadAllText(absolutePath);
+            return _fileSystem.File.ReadAllText(absolutePath);
         }
         
         public string GetTrackedItemJsonForPath(string path)
@@ -43,7 +46,7 @@ namespace GitTracker.Providers
             string directory = Path.GetDirectoryName(absolutePath);
 
             var trackedItemPath =
-                Directory.GetFiles(directory, "*.json", SearchOption.AllDirectories)
+                _fileSystem.Directory.GetFiles(directory, "*.json", SearchOption.AllDirectories)
                     .Single(x => x.IsTrackedItemJson());
 
             return trackedItemPath;
@@ -56,10 +59,10 @@ namespace GitTracker.Providers
             foreach (var contentType in contentTypes)
             {
                 string contentTypeFolderPath = _pathProvider.GetTrackedItemPath(contentType);
-                if (!Directory.Exists(contentTypeFolderPath)) continue;
+                if (!_fileSystem.Directory.Exists(contentTypeFolderPath)) continue;
 
                 var paths =
-                    Directory.GetFiles(contentTypeFolderPath, "*.json", SearchOption.AllDirectories)
+                    _fileSystem.Directory.GetFiles(contentTypeFolderPath, "*.json", SearchOption.AllDirectories)
                         .ToList();
 
                 paths.ForEach(x =>
@@ -83,9 +86,9 @@ namespace GitTracker.Providers
                     foreach (var contentItem in trackedItems)
                     {
                         var currentContentItemPath = _pathProvider.GetTrackedItemPath(contentItem.GetType(), contentItem);
-                        if (Directory.Exists(currentContentItemPath))
+                        if (_fileSystem.Directory.Exists(currentContentItemPath))
                         {
-                            Directory.Delete(currentContentItemPath, true);
+                            _fileSystem.Directory.Delete(currentContentItemPath, true);
                         }
                     }
                 }
@@ -108,9 +111,9 @@ namespace GitTracker.Providers
                     foreach (var trackedItem in trackedItems)
                     {
                         var contentItemPath = _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
-                        if (!Directory.Exists(contentItemPath))
+                        if (!_fileSystem.Directory.Exists(contentItemPath))
                         {
-                            Directory.CreateDirectory(contentItemPath);
+                            _fileSystem.Directory.CreateDirectory(contentItemPath);
                         }
 
                         string fileContents =
@@ -119,7 +122,7 @@ namespace GitTracker.Providers
                                 ContractResolver = _contentContractResolver
                             });
 
-                        File.WriteAllText(Path.Combine(contentItemPath, $"{trackedItem.Id}.json"), fileContents);
+                        _fileSystem.File.WriteAllText(Path.Combine(contentItemPath, $"{trackedItem.Id}.json"), fileContents);
                     }
                 }
                 catch (Exception ex)
@@ -140,19 +143,19 @@ namespace GitTracker.Providers
                 trackedItem.Name = newName;
 
                 var newContentItemPath = _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
-                if (Directory.Exists(newContentItemPath))
+                if (_fileSystem.Directory.Exists(newContentItemPath))
                 {
                     throw new Exception($"The name {newName} already exists!");
                 }
 
-                Directory.CreateDirectory(newContentItemPath);
+                _fileSystem.Directory.CreateDirectory(newContentItemPath);
 
-                foreach (var file in Directory.GetFiles(currentContentItemPath))
+                foreach (var file in _fileSystem.Directory.GetFiles(currentContentItemPath))
                 {
                     File.Move(file, Path.Combine(newContentItemPath, Path.GetFileName(file)));
                 }
 
-                Directory.Delete(currentContentItemPath);
+                _fileSystem.Directory.Delete(currentContentItemPath);
 
                 return true;
             });

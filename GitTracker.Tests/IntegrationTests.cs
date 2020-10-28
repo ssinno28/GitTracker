@@ -25,16 +25,6 @@ namespace GitTracker.Tests
         }
 
         [Fact]
-        public async Task Test_Name_Already_Exists()
-        {
-            await Assert.ThrowsAnyAsync<Exception>(async () =>
-                    await GitTrackingService.Create(new BlogPost()
-                    {
-                        Name = "Test Blog Post"
-                    }));
-        }
-
-        [Fact]
         public async Task Test_Get_History_For_TrackedItem()
         {
             var commits = GitTrackingService.GetHistory(_initialTrackedItem);
