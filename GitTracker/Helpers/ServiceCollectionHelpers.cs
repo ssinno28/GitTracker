@@ -34,6 +34,7 @@ namespace GitTracker.Helpers
             services.AddScoped<IGitRepo, GitRepo>();
             services.AddScoped<IPathProvider, PathProvider>();
             services.AddScoped<IFileProvider, FileProvider>();
+            services.AddScoped<IFileSystem, FileSystem>();
             services.AddScoped<IGitTrackingService, GitTrackingService>();
             services.AddScoped<IFileSystem, FileSystem>();
             services.AddScoped<ContentContractResolver>();
