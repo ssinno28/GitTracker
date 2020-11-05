@@ -43,7 +43,7 @@ namespace GitTracker.Services
             IEnumerable<IDeleteOperation> deleteOperations,
             GitConfig gitConfig,
             ILoggerFactory loggerFactory,
-            ILocalPathFactory localPathFactory, 
+            ILocalPathFactory localPathFactory,
             IFileSystem fileSystem)
         {
             _contentContractResolver = contentContractResolver;
@@ -453,32 +453,26 @@ namespace GitTracker.Services
 
         private async Task PerformCreate(TrackedItem trackedItem)
         {
-            var createOperation =
-                _createOperations.FirstOrDefault(x => x.IsMatch(trackedItem.GetType()));
-
-            if (createOperation == null) return;
-
-            await createOperation.Create(trackedItem);
+            foreach (var createOperation in _createOperations.Where(x => x.IsMatch(trackedItem.GetType())))
+            {
+                await createOperation.Create(trackedItem);
+            }
         }
 
         private async Task PerformDelete(TrackedItem trackedItem)
         {
-            var deleteOperation =
-                _deleteOperations.FirstOrDefault(x => x.IsMatch(trackedItem.GetType()));
-
-            if (deleteOperation == null) return;
-
-            await deleteOperation.Delete(trackedItem);
+            foreach (var deleteOperation in _deleteOperations.Where(x => x.IsMatch(trackedItem.GetType())))
+            {
+                await deleteOperation.Delete(trackedItem);
+            }
         }
 
         private async Task PerformUpdate(TrackedItem trackedItem)
         {
-            var updateOperation =
-                _updateOperations.FirstOrDefault(x => x.IsMatch(trackedItem.GetType()));
-
-            if (updateOperation == null) return;
-
-            await updateOperation.Update(trackedItem);
+            foreach (var updateOperation in _updateOperations.Where(x => x.IsMatch(trackedItem.GetType())))
+            {
+                await updateOperation.Update(trackedItem);
+            }
         }
 
         private async Task<TrackedItem> GetTrackedItem(string path)
