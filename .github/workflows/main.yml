@@ -29,7 +29,7 @@ jobs:
       run: dotnet test GitTracker.sln
       
     - name: Publish GitTracker
-      uses: rohith/publish-nuget@v2
+      uses: alirezanet/publish-nuget@v3.0.0
       with:
           PROJECT_FILE_PATH: GitTracker/GitTracker.csproj
           NUGET_KEY: ${{secrets.NUGET_API_KEY}}

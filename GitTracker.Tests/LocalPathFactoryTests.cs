@@ -1,10 +1,7 @@
 ﻿using System;
-using System.IO;
-using System.Reflection;
 using System.Security.Claims;
 using System.Security.Principal;
 using GitTracker.Interfaces;
-using GitTracker.Providers;
 using GitTracker.Tests.Factories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
