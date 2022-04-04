@@ -7,8 +7,8 @@ on:
 
 jobs:
   build:
-  
-    runs-on: ubuntu-20.04
+
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
@@ -23,10 +23,10 @@ jobs:
       run: dotnet restore GitTracker.sln
       
     - name: Build Solution
-      run: dotnet build GitTracker.sln --configuration Release
+      run: dotnet build GitTracker.sln  
       
     - name: Test Solution
-      run: dotnet test GitTracker.sln --configuration Release
+      run: dotnet test GitTracker.sln
       
     - name: Publish GitTracker
       uses: alirezanet/publish-nuget@v3.0.0
