@@ -115,14 +115,14 @@ namespace GitTracker.Tests
         }
 
         [Fact]
-        public void Test_Publish_Does_Not_Catch_Generic_Exception()
+        public async Task Test_Publish_Does_Not_Catch_Generic_Exception()
         {
             _mockGitRepo.Setup(x =>
                     x.Pull(It.IsAny<string>(), It.IsAny<CheckoutFileConflictStrategy>(), It.IsAny<string>()))
                 .Throws<Exception>();
 
 
-            Assert.ThrowsAnyAsync<Exception>(() => _gitTrackingService.Sync(It.IsAny<string>(), It.IsAny<CheckoutFileConflictStrategy>(), It.IsAny<string>()));
+            await Assert.ThrowsAnyAsync<Exception>(() => _gitTrackingService.Sync(It.IsAny<string>(), It.IsAny<CheckoutFileConflictStrategy>(), It.IsAny<string>()));
         }
 
         [Fact]
