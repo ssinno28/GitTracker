@@ -408,8 +408,8 @@ namespace GitTracker.Repositories
             string branch;
             using (var repo = LocalRepo)
             {
-                var currentBranch = repo.Branches.First(x => x.IsCurrentRepositoryHead);
-                branch = currentBranch.FriendlyName;
+                var currentBranch = repo.Branches.FirstOrDefault(x => x.IsCurrentRepositoryHead);
+                branch = currentBranch?.FriendlyName;
             }
 
             return branch;
@@ -884,13 +884,15 @@ namespace GitTracker.Repositories
             return diffs;
         }
 
+
+
         public List<GitCommit> GetCommits(int page = 1, int take = 10, IList<string> paths = null)
         {
             List<GitCommit> commits = new List<GitCommit>();
             int skip = (page - 1) * take;
             using (var repo = LocalRepo)
             {
-                Branch? remoteTrackingBranch = repo.Branches[$"origin/{GetCurrentBranch()}"];
+                Branch? remoteTrackingBranch = GetRemoteTrackingBranch(repo);
                 if (paths != null && paths.Any())
                 {
                     foreach (var path in paths)
@@ -1009,6 +1011,16 @@ namespace GitTracker.Repositories
         {
             string localPath = _localPathFactory.GetLocalPath();
             return Directory.Exists(localPath) && Repository.IsValid(localPath);
+        }
+
+        private Branch? GetRemoteTrackingBranch(Repository repo)
+        {
+            var currentBranch = GetCurrentBranch();
+            if (string.IsNullOrEmpty(currentBranch))
+                return null;
+                
+            Branch? remoteTrackingBranch = repo.Branches[$"origin/{currentBranch}"];
+            return remoteTrackingBranch;
         }
     }
 }
