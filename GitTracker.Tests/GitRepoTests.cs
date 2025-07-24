@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using LibGit2Sharp;
 using Xunit;
 
@@ -51,6 +49,19 @@ namespace GitTracker.Tests
             Assert.True(result);
 
             var commits = GitRepo.GetCommits();
+
+            Assert.True(commits[0].Published);
+            Assert.NotEmpty(commits);
+        }
+
+        [Fact]
+        public void Test_Is_Commit_Not_Pushed()
+        {
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(LocalPath);
+
+            var commits = GitRepo.GetCommits();
+
+            Assert.False(commits[0].Published);
             Assert.NotEmpty(commits);
         }
 

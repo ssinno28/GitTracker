@@ -8,5 +8,6 @@ namespace GitTracker.Models
         public DateTimeOffset Date { get; set; }
         public string Message { get; set; }
         public string Id { get; set; }
+        public bool Published { get; set; }
     }
 }

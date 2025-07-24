@@ -890,18 +890,23 @@ namespace GitTracker.Repositories
             int skip = (page - 1) * take;
             using (var repo = LocalRepo)
             {
+                Branch? remoteTrackingBranch = repo.Branches[$"origin/{GetCurrentBranch()}"];
                 if (paths != null && paths.Any())
                 {
                     foreach (var path in paths)
                     {
                         foreach (var logEntry in repo.Commits.QueryBy(path))
                         {
+                            bool isPushed = remoteTrackingBranch != null &&
+                                repo.ObjectDatabase.FindMergeBase(logEntry.Commit, remoteTrackingBranch.Tip) == logEntry.Commit;
+
                             commits.Add(new GitCommit
                             {
                                 Author = logEntry.Commit.Author.Name,
                                 Date = logEntry.Commit.Author.When,
                                 Message = logEntry.Commit.Message,
-                                Id = logEntry.Commit.Id.ToString()
+                                Id = logEntry.Commit.Id.ToString(),
+                                Published = isPushed
                             });
                         }
                     }
@@ -916,12 +921,16 @@ namespace GitTracker.Repositories
                 {
                     foreach (var commit in repo.Commits.Skip(skip).Take(take))
                     {
+                        bool isPushed = remoteTrackingBranch != null &&
+                                        repo.ObjectDatabase.FindMergeBase(commit, remoteTrackingBranch.Tip) == commit;
+
                         commits.Add(new GitCommit
                         {
                             Author = commit.Author.Name,
                             Date = commit.Author.When,
                             Message = commit.Message,
-                            Id = commit.Id.ToString()
+                            Id = commit.Id.ToString(),
+                            Published = isPushed
                         });
                     }
                 }
