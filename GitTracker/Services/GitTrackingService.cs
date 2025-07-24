@@ -681,7 +681,8 @@ namespace GitTracker.Services
         private Type GetContentType(string entity)
         {
             string typeDefinition = JObject.Parse(entity).GetValue("TypeDefinition").Value<string>();
-            return _gitConfig.TrackedTypes.First(x => x.Name.Equals(typeDefinition));
+            var trackedType = _gitConfig.TrackedTypes.FirstOrDefault(x => x.Name.Equals(typeDefinition));
+            return trackedType ?? typeof(TrackedItem);
         }
 
         private async Task<TrackedItem> DeserializeContentItem(string document)
