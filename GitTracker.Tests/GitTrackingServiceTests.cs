@@ -169,5 +169,47 @@ namespace GitTracker.Tests
                     Name = "Test Blog Post"
                 }));
         }
+
+        [Fact]
+        public async Task Test_GetTrackedItemDiffs_Returns_TrackedItem_When_Type_Not_In_Config()
+        {
+            // Arrange - Create a type not in GitConfig.TrackedTypes
+            var unknownType = typeof(UnknownTrackedItem);
+            
+            _mockPathProvider
+                .Setup(x => x.GetRelativeTrackedItemPath(unknownType, It.IsAny<TrackedItem>()))
+                .Returns($"/unknown/{Guid.NewGuid().ToString()}.json");
+
+            var diffs = new List<GitDiff>
+            {
+                new GitDiff
+                {
+                    Path = $"/unknown/{Guid.NewGuid().ToString()}.json",
+                    ChangeKind = ChangeKind.Modified,
+                    InitialFileContent = "{\"Id\":\"1\",\"Name\":\"Initial\", \"TypeDefinition\": \"UnknownTrackedItem\"}",
+                    FinalFileContent = "{\"Id\":\"1\",\"Name\":\"Final\", \"TypeDefinition\": \"UnknownTrackedItem\"}"
+                }
+            };
+
+            _mockGitRepo.Setup(x => x.GetDiff(It.IsAny<IList<string>>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(diffs);
+
+            // Act
+            var result = await _gitTrackingService.GetTrackedItemDiffs(unknownType, Guid.NewGuid().ToString());
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Single(result);
+            Assert.IsType<TrackedItem>(result[0].Initial);
+            Assert.IsType<TrackedItem>(result[0].Final);
+            Assert.Equal("Initial", result[0].Initial.Name);
+            Assert.Equal("Final", result[0].Final.Name);
+        }
+
+        // Helper class for testing - a TrackedItem type not in GitConfig.TrackedTypes
+        public class UnknownTrackedItem : TrackedItem
+        {
+            public string CustomProperty { get; set; }
+        }
     }
 }

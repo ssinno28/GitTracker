@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace GitTracker.Models
 {
-    public abstract class TrackedItem
+    public class TrackedItem
     {
         protected TrackedItem()
         {
