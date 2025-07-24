@@ -304,14 +304,17 @@ namespace GitTracker.Services
                     }
 
                     var propertyInfo = GetValueProviderProperty(trackedItemType, gitDiff.Path);
-                    if (trackedItemDiff.Initial != null)
+                    if (propertyInfo != null)
                     {
-                        propertyInfo.SetValue(trackedItemDiff.Initial, gitDiff.InitialFileContent);
-                    }
+                        if (trackedItemDiff.Initial != null)
+                        {
+                            propertyInfo.SetValue(trackedItemDiff.Initial, gitDiff.InitialFileContent);
+                        }
 
-                    if (trackedItemDiff.Final != null)
-                    {
-                        propertyInfo.SetValue(trackedItemDiff.Final, gitDiff.FinalFileContent);
+                        if (trackedItemDiff.Final != null)
+                        {
+                            propertyInfo.SetValue(trackedItemDiff.Final, gitDiff.FinalFileContent);
+                        }
                     }
                 }
 
@@ -362,12 +365,12 @@ namespace GitTracker.Services
             return history;
         }
 
-        private PropertyInfo GetValueProviderProperty(Type contentType, string fileName)
+        private PropertyInfo? GetValueProviderProperty(Type contentType, string fileName)
         {
             string propertyName = Path.GetFileNameWithoutExtension(fileName);
             return contentType
                 .GetProperties()
-                .First(x => x.Name.ToSentenceCase().MakeUrlFriendly().Equals(propertyName));
+                .FirstOrDefault(x => x.Name.ToSentenceCase().MakeUrlFriendly().Equals(propertyName));
         }
 
         public async Task<IList<TrackedItemConflict>> GetTrackedItemConflicts()
@@ -422,8 +425,11 @@ namespace GitTracker.Services
                     var propertyInfo =
                         GetValueProviderProperty(trackedItemConflict.Ours.GetType(), conflict.Ours.Path);
 
-                    propertyInfo.SetValue(trackedItemConflict.Ours, fileContents.OurFile);
-                    propertyInfo.SetValue(trackedItemConflict.Theirs, fileContents.TheirFile);
+                    if (propertyInfo != null)
+                    {
+                        propertyInfo.SetValue(trackedItemConflict.Ours, fileContents.OurFile);
+                        propertyInfo.SetValue(trackedItemConflict.Theirs, fileContents.TheirFile);
+                    }
 
                     var valueProviderConflict =
                         new ValueProviderConflict
@@ -436,7 +442,11 @@ namespace GitTracker.Services
                     {
                         valueProviderConflict.BasePath = Path.Combine(localPath, $"{conflict.Ancestor.Path}.BASE");
                         File.WriteAllText(valueProviderConflict.BasePath, fileContents.BaseFile);
-                        propertyInfo.SetValue(trackedItemConflict.Ancestor, fileContents.BaseFile);
+
+                        if (propertyInfo != null)
+                        {
+                            propertyInfo.SetValue(trackedItemConflict.Ancestor, fileContents.BaseFile);
+                        }
                     }
 
                     File.WriteAllText(valueProviderConflict.LocalPath, fileContents.OurFile);
