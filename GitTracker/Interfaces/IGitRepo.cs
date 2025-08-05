@@ -15,6 +15,7 @@ namespace GitTracker.Interfaces
         bool Pull(string email, CheckoutFileConflictStrategy strategy, string username = null);
         bool Push(string email, string username = null);
         bool Reset(ResetMode resetMode, string commitId = null);
+        bool ResetFileChanges(string path, string committishOrBranchSpec = null);
         List<GitCommit> GetCommits(int page = 1, int take = 10, IList<string> paths = null);
         IList<GitCommit> GetAllCommitsForPath(string path);
         int Count(IList<string> paths = null);

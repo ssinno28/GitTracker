@@ -1007,6 +1007,26 @@ namespace GitTracker.Repositories
             return true;
         }
 
+        public bool ResetFileChanges(string path, string committishOrBranchSpec = null)
+        {
+            using (var repo = LocalRepo)
+            {
+                try
+                {
+                    // Reset file to HEAD state (discards working directory changes)
+                    repo.CheckoutPaths(committishOrBranchSpec ?? "HEAD", [path],
+                        new CheckoutOptions { CheckoutModifiers = CheckoutModifiers.Force });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Could not reset file {0}", path);
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public bool RepositoryExists()
         {
             string localPath = _localPathFactory.GetLocalPath();
@@ -1018,7 +1038,7 @@ namespace GitTracker.Repositories
             var currentBranch = GetCurrentBranch();
             if (string.IsNullOrEmpty(currentBranch))
                 return null;
-                
+
             Branch? remoteTrackingBranch = repo.Branches[$"origin/{currentBranch}"];
             return remoteTrackingBranch;
         }

@@ -198,5 +198,29 @@ namespace GitTracker.Tests
             Assert.Throws<MergeFetchHeadNotFoundException>(() => GitRepo.Pull(Email, CheckoutFileConflictStrategy.Normal));
         }
 
+        [Fact]
+        public void Test_Reset_File_Changes()
+        {
+            var originalContent = "Testing service";
+            var modifiedContent = "Modified content for reset test";
+            string filePath = Path.Combine(LocalPath, "fileToCommit.txt");
+            
+            // Modify the file that was committed in constructor
+            File.WriteAllText(filePath, modifiedContent);
+            
+            // Verify file is modified
+            var currentContent = File.ReadAllText(filePath);
+            Assert.Equal(modifiedContent, currentContent);
+            
+            // Reset the file changes
+            bool result = GitRepo.ResetFileChanges("fileToCommit.txt");
+            
+            // Verify the reset was successful
+            Assert.True(result);
+            
+            // Verify file content is restored to original
+            var restoredContent = File.ReadAllText(filePath);
+            Assert.Equal(originalContent, restoredContent);
+        }
     }
 }
