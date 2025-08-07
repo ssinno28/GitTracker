@@ -88,7 +88,7 @@ namespace GitTracker.Repositories
                 // if merge strategy is theirs or ours then we stage and commit for them
                 if (repo.Index.Conflicts.Any() && (strategy == CheckoutFileConflictStrategy.Theirs || strategy == CheckoutFileConflictStrategy.Ours))
                 {
-                    string commitMsg = GetMergeCommitMessage(repo.Index.Conflicts);
+                    string commitMsg = GetMergeCommitMessage();
                     foreach (var indexConflict in repo.Index.Conflicts)
                     {
                         Commands.Stage(repo,
@@ -231,7 +231,7 @@ namespace GitTracker.Repositories
                 // if merge strategy is theirs or ours then we stage and commit for them
                 if (repo.Index.Conflicts.Any() && (strategy == CheckoutFileConflictStrategy.Theirs || strategy == CheckoutFileConflictStrategy.Ours))
                 {
-                    string commitMsg = GetMergeCommitMessage(repo.Index.Conflicts);
+                    string commitMsg = GetMergeCommitMessage();
                     foreach (var indexConflict in repo.Index.Conflicts)
                     {
                         Commands.Stage(repo,
@@ -262,15 +262,18 @@ namespace GitTracker.Repositories
             return conflicts;
         }
 
-        private string GetMergeCommitMessage(ConflictCollection conflicts)
+        public string GetMergeCommitMessage()
         {
+            using var repo = LocalRepo;
+            if (!repo.Index.Conflicts.Any()) return string.Empty;
+
             var stringBuilder = new StringBuilder();
 
             stringBuilder.AppendLine($"Merge branch {GetCurrentBranch()} of {_gitConfig.RemotePath}");
             stringBuilder.AppendLine(string.Empty);
             stringBuilder.AppendLine("Conflicts: ");
 
-            foreach (var conflict in conflicts)
+            foreach (var conflict in repo.Index.Conflicts)
             {
                 stringBuilder.AppendLine($"        {conflict.Theirs.Path}");
             }

@@ -222,5 +222,39 @@ namespace GitTracker.Tests
             var restoredContent = File.ReadAllText(filePath);
             Assert.Equal(originalContent, restoredContent);
         }
+
+        [Fact]
+        public void Test_Create_Merge_Conflict_Commit()
+        {
+            string filePath = Path.Combine(LocalPath, "fileToCommit.txt");
+            GitRepo.Push(Email);
+
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
+            GitRepo.Pull(Email, CheckoutFileConflictStrategy.Normal);
+
+
+            string secondFilePath = Path.Combine(SecondLocalPath, "fileToCommit.txt");
+            var modifiedContent = "Modified content for reset test";
+
+            // Modify the file that was committed in constructor
+            File.WriteAllText(secondFilePath, modifiedContent);
+            GitRepo.Stage(secondFilePath);
+            var secondCommit = GitRepo.Commit("second commit", Email);
+
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(LocalPath);
+            var modifiedContentAgain = "Modified content for reset test again";
+            File.WriteAllText(filePath, modifiedContentAgain);
+            GitRepo.Stage(filePath);
+            var thirdCommit = GitRepo.Commit("third commit", Email);
+            GitRepo.Push(Email);
+
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
+            GitRepo.Pull(Email, CheckoutFileConflictStrategy.Normal);
+
+            string message = GitRepo.GetMergeCommitMessage();
+            
+            Assert.Contains(@"Conflicts: 
+        fileToCommit.txt", message);
+        }
     }
 }
