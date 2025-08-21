@@ -522,10 +522,9 @@ namespace GitTracker.Services
         public async Task<TrackedItem> Create(TrackedItem trackedItem)
         {
             CheckNameExists(trackedItem.GetType(), trackedItem);
+            trackedItem.Id = Guid.NewGuid().ToString();
 
             await SetNonJsonValues(trackedItem);
-
-            trackedItem.Id = Guid.NewGuid().ToString();
 
             await _fileProvider.UpsertFiles(trackedItem);
             await PerformCreate(trackedItem);
