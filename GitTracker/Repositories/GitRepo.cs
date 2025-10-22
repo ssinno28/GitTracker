@@ -37,8 +37,7 @@ namespace GitTracker.Repositories
         {
             if (string.IsNullOrEmpty(_gitConfig.Token))
             {
-                _logger.LogWarning($"Could not pull from git repo ${_gitConfig.RemotePath} because there is no token.");
-                return false;
+                _logger.LogWarning($"No token specified for remote ${_gitConfig.RemotePath}, assuming local folder bare repo is used.");
             }
 
             string localPath = _localPathFactory.GetLocalPath();
