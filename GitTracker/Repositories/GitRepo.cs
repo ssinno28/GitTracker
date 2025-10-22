@@ -320,6 +320,8 @@ namespace GitTracker.Repositories
             return true;
         }
 
+
+
         private void SetupAndTrack(Repository repo, string userName)
         {
             if (repo.Network.Remotes["origin"] == null)
@@ -1017,7 +1019,7 @@ namespace GitTracker.Repositories
                 try
                 {
                     // Reset file to HEAD state (discards working directory changes)
-                    repo.CheckoutPaths(committishOrBranchSpec ?? "HEAD", [path],
+                    repo.CheckoutPaths(committishOrBranchSpec ?? "HEAD", new[] { path },
                         new CheckoutOptions { CheckoutModifiers = CheckoutModifiers.Force });
                 }
                 catch (Exception ex)
@@ -1044,6 +1046,35 @@ namespace GitTracker.Repositories
 
             Branch? remoteTrackingBranch = repo.Branches[$"origin/{currentBranch}"];
             return remoteTrackingBranch;
+        }
+
+        public bool InitializeRepository(string folderPath, bool bare = false)
+        {
+            try
+            {
+                // Check if directory exists, create if it doesn't
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                // Check if a valid repository already exists
+                if (Repository.IsValid(folderPath))
+                {
+                    _logger.LogInformation($"Repository already exists at {folderPath}");
+                    return true;
+                }
+
+                // Initialize new repository
+                Repository.Init(folderPath, bare);
+                _logger.LogInformation($"Successfully initialized {(bare ? "bare " : "")}repository at {folderPath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Could not initialize repository at {folderPath}");
+                return false;
+            }
         }
     }
 }

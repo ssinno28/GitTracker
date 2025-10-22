@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -232,7 +233,6 @@ namespace GitTracker.Tests
             LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
             GitRepo.Pull(Email, CheckoutFileConflictStrategy.Normal);
 
-
             string secondFilePath = Path.Combine(SecondLocalPath, "fileToCommit.txt");
             var modifiedContent = "Modified content for reset test";
 
@@ -255,6 +255,42 @@ namespace GitTracker.Tests
             
             Assert.Contains(@"Conflicts: 
         fileToCommit.txt", message);
+        }
+
+        [Fact]
+        public void Test_Initialize_Repository()
+        {
+            string newRepoPath = Path.Combine(Path.GetTempPath(), "TestInitRepo", Guid.NewGuid().ToString());
+            Directory.CreateDirectory(newRepoPath);
+            
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(newRepoPath);
+            
+            bool result = GitRepo.InitializeRepository(newRepoPath);
+            
+            Assert.True(result);
+            Assert.True(Directory.Exists(Path.Combine(newRepoPath, ".git")));
+            
+            // Cleanup
+            Directory.Delete(newRepoPath, true);
+        }
+
+        [Fact]
+        public void Test_Initialize_Bare_Repository()
+        {
+            string newRepoPath = Path.Combine(Path.GetTempPath(), "TestInitBareRepo", Guid.NewGuid().ToString());
+            Directory.CreateDirectory(newRepoPath);
+            
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(newRepoPath);
+            
+            bool result = GitRepo.InitializeRepository(newRepoPath, bare: true);
+            
+            Assert.True(result);
+            Assert.True(File.Exists(Path.Combine(newRepoPath, "HEAD")));
+            Assert.True(Directory.Exists(Path.Combine(newRepoPath, "objects")));
+            Assert.True(Directory.Exists(Path.Combine(newRepoPath, "refs")));
+            
+            // Cleanup
+            Directory.Delete(newRepoPath, true);
         }
     }
 }

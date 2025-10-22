@@ -40,5 +40,6 @@ namespace GitTracker.Interfaces
         // string Stash(string message, string email, string userName = null);
         bool RepositoryExists();
         string GetMergeCommitMessage();
+        bool InitializeRepository(string folderPath, bool bare = false);
     }
 }
