@@ -2,10 +2,6 @@
 
 ![CI](https://github.com/ssinno28/GitTracker/workflows/CI/badge.svg)
 
-**NOT READY FOR PRODUCTION USE**
-
-This is an experimental library that allows you to use git to version control your content. It is not ready for a production environment and there will most likely be API breaking changes in the future. 
-
 ## Getting Started
 
 To start you will need to wire up the appropriate services in DI:
