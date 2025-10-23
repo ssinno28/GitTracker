@@ -56,20 +56,27 @@ namespace GitTracker.Repositories
 
                 SetupAndTrack(repo, username ?? email);
 
-                CredentialsHandler credentialsProvider = (url, usernameFromUrl, types) =>
-                    new UsernamePasswordCredentials
-                    {
-                        Username = username ?? email,
-                        Password = _gitConfig.Token
-                    };
+                FetchOptions fetchOptions = new FetchOptions();
+                if (!string.IsNullOrEmpty(_gitConfig.Token))
+                {
+                    CredentialsHandler credentialsProvider = (url, usernameFromUrl, types) =>
+                        new UsernamePasswordCredentials
+                        {
+                            Username = username,
+                            Password = _gitConfig.Token
+                        };
+
+                    fetchOptions =
+                        new FetchOptions
+                        {
+                            CredentialsProvider = credentialsProvider,
+                        };
+                }
 
                 // Credential information to fetch
                 PullOptions options = new PullOptions
                 {
-                    FetchOptions = new FetchOptions
-                    {
-                        CredentialsProvider = credentialsProvider
-                    },
+                    FetchOptions = fetchOptions,
                     MergeOptions = new MergeOptions
                     {
                         FastForwardStrategy = FastForwardStrategy.Default,
@@ -298,18 +305,24 @@ namespace GitTracker.Repositories
 
                 SetupAndTrack(repo, username ?? email);
 
-                CredentialsHandler credentialsProvider = (url, usernameFromUrl, types) =>
-                    new UsernamePasswordCredentials
-                    {
-                        Username = username ?? email,
-                        Password = _gitConfig.Token
-                    };
+                
 
                 // Credential information to fetch
-                PushOptions options = new PushOptions
+                PushOptions options = new PushOptions();
+                if (!string.IsNullOrEmpty(_gitConfig.Token))
                 {
-                    CredentialsProvider = credentialsProvider
-                };
+                    CredentialsHandler credentialsProvider = (url, usernameFromUrl, types) =>
+                        new UsernamePasswordCredentials
+                        {
+                            Username = username ?? email,
+                            Password = _gitConfig.Token
+                        };
+
+                    options = new PushOptions
+                    {
+                        CredentialsProvider = credentialsProvider
+                    };
+                }
 
                 // push
                 var currentBranch = repo.Branches.FirstOrDefault(x => x.IsCurrentRepositoryHead);
@@ -331,20 +344,25 @@ namespace GitTracker.Repositories
             Remote remote = repo.Network.Remotes["origin"];
             var currentBranch = repo.Branches.FirstOrDefault(x => x.IsCurrentRepositoryHead);
 
-            CredentialsHandler credentialsProvider = (url, usernameFromUrl, types) =>
-                new UsernamePasswordCredentials
-                {
-                    Username = userName,
-                    Password = _gitConfig.Token
-                };
+            FetchOptions fetchOptions = new FetchOptions();
+            if (!string.IsNullOrEmpty(_gitConfig.Token))
+            {
+                CredentialsHandler credentialsProvider = (url, usernameFromUrl, types) =>
+                    new UsernamePasswordCredentials
+                    {
+                        Username = userName,
+                        Password = _gitConfig.Token
+                    };
+
+                fetchOptions =
+                    new FetchOptions
+                    {
+                        CredentialsProvider = credentialsProvider,
+                    };
+            }
 
             if (currentBranch == null)
             {
-                FetchOptions fetchOptions =
-                    new FetchOptions
-                    {
-                        CredentialsProvider = credentialsProvider
-                    };
 
                 var refSpecs = remote.FetchRefSpecs.Select(x => x.Specification);
                 Commands.Fetch(repo, remote.Name, refSpecs, fetchOptions, string.Empty);
