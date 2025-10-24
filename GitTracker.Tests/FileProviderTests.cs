@@ -38,6 +38,7 @@ namespace GitTracker.Tests
             _localPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(_localPath);
             serviceCollection.Add(new ServiceDescriptor(typeof(ILocalPathFactory), _localPathFactoryMock.Object));
             serviceCollection.Add(new ServiceDescriptor(typeof(IFileSystem), _mockFileSystem.Object));
+            serviceCollection.Add(new ServiceDescriptor(typeof(GitConfig), new GitConfig()));
 
             serviceCollection.AddScoped<ContentContractResolver>();
             serviceCollection.AddScoped<IPathProvider, PathProvider>();

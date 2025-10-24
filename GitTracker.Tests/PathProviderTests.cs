@@ -31,6 +31,7 @@ namespace GitTracker.Tests
             _localPathFactoryMock = new Mock<ILocalPathFactory>();
             _localPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(_localPath);
             serviceCollection.Add(new ServiceDescriptor(typeof(ILocalPathFactory), _localPathFactoryMock.Object));
+            serviceCollection.Add(new ServiceDescriptor(typeof(GitConfig), new GitConfig()));
 
             serviceCollection.AddScoped<IPathProvider, PathProvider>();
 
@@ -76,6 +77,26 @@ namespace GitTracker.Tests
             string path = pathProvider.GetRelativeTrackedItemPath(_blogPost.GetType(), _blogPost);
 
             Assert.Equal("BlogPost/my-test-name", path);
+        }
+
+        [Fact]
+        public void Get_Tracked_Item_Relative_Path_With_ContentPath()
+        {
+            var gitConfig = _serviceProvider.GetService<GitConfig>();
+            gitConfig.ContentPath = "content";
+            var pathProvider = _serviceProvider.GetService<IPathProvider>();
+            string path = pathProvider.GetRelativeTrackedItemPath(_blogPost.GetType(), _blogPost);
+            Assert.Equal("content/BlogPost/my-test-name", path);
+        }
+
+        [Fact]
+        public void Get_Tracked_Type_Relative_Path_With_ContentPath()
+        {
+            var gitConfig = _serviceProvider.GetService<GitConfig>();
+            gitConfig.ContentPath = "content";
+            var pathProvider = _serviceProvider.GetService<IPathProvider>();
+            string path = pathProvider.GetRelativeTrackedItemPath(_blogPost.GetType());
+            Assert.Equal("content/BlogPost", path);
         }
     }
 }

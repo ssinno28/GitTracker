@@ -9,5 +9,6 @@ namespace GitTracker.Models
         public string Token { get; set; }
         public string WebhookSecret { get; set; }
         public IList<Type> TrackedTypes { get; set; }
+        public string ContentPath { get; set; } = string.Empty;
     }
 }

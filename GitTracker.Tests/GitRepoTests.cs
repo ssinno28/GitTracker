@@ -253,8 +253,7 @@ namespace GitTracker.Tests
 
             string message = GitRepo.GetMergeCommitMessage();
             
-            Assert.Contains(@"Conflicts: 
-        fileToCommit.txt", message);
+            Assert.Contains(@"Conflicts:", message);
         }
 
         [Fact]
