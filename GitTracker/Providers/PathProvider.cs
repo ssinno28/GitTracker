@@ -19,6 +19,8 @@ namespace GitTracker.Providers
 
         public string GetTrackedItemPath(Type contentType, TrackedItem contentItem = null)
         {
+            _gitConfig.ContentPath ??= string.Empty;
+
             string contentTypeName = contentType.Name;
             var contentItemPath =
                           contentItem != null
@@ -30,6 +32,8 @@ namespace GitTracker.Providers
 
         public string GetRelativeTrackedItemPath(Type contentType, TrackedItem contentItem = null)
         {
+            _gitConfig.ContentPath ??= string.Empty;
+
             string contentTypeName = contentType.Name;
             var contentItemPath =
                 contentItem != null

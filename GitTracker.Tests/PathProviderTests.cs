@@ -59,8 +59,19 @@ namespace GitTracker.Tests
             string path = pathProvider.GetTrackedItemPath(_blogPost.GetType(), _blogPost);
 
             Assert.Equal(Path.Combine(_localPath, "BlogPost", "my-test-name"), path);
-        } 
-        
+        }
+
+        [Fact]
+        public void Get_Tracked_Item_Path_With_Null_ContentPath()
+        {
+            var gitConfig = _serviceProvider.GetService<GitConfig>();
+            gitConfig.ContentPath = null;
+            var pathProvider = _serviceProvider.GetService<IPathProvider>();
+            string path = pathProvider.GetTrackedItemPath(_blogPost.GetType(), _blogPost);
+
+            Assert.Equal(Path.Combine(_localPath, "BlogPost", "my-test-name"), path);
+        }
+
         [Fact]
         public void Get_Tracked_Type_Relative_Path()
         {
@@ -97,6 +108,16 @@ namespace GitTracker.Tests
             var pathProvider = _serviceProvider.GetService<IPathProvider>();
             string path = pathProvider.GetRelativeTrackedItemPath(_blogPost.GetType());
             Assert.Equal("content/BlogPost", path);
+        }
+
+        [Fact]
+        public void Get_Tracked_Item_Relative_Path_With_Null_ContentPath()
+        {
+            var gitConfig = _serviceProvider.GetService<GitConfig>();
+            gitConfig.ContentPath = null;
+            var pathProvider = _serviceProvider.GetService<IPathProvider>();
+            string path = pathProvider.GetRelativeTrackedItemPath(_blogPost.GetType(), _blogPost);
+            Assert.Equal("BlogPost/my-test-name", path);
         }
     }
 }
