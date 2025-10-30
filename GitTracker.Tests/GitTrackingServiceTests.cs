@@ -150,6 +150,25 @@ namespace GitTracker.Tests
         }
 
         [Fact]
+        public async Task Test_Sync_Returns_True_When_CheckRemoteHasCommits_Returns_False()
+        {
+            // Arrange
+            _mockGitRepo.Setup(x => x.CheckRemoteHasCommits(It.IsAny<string>()))
+                .Returns(false);
+
+            _mockGitRepo.Setup(x => x.GetDiffFromHead(It.IsAny<IList<string>>()))
+                .Returns(new List<GitDiff>());
+
+            // Act
+            var result = await _gitTrackingService.Sync("test@example.com", CheckoutFileConflictStrategy.Normal, "testuser");
+
+            // Assert
+            Assert.True(result);
+            _mockGitRepo.Verify(x => x.CheckRemoteHasCommits(It.IsAny<string>()), Times.Once);
+            _mockGitRepo.Verify(x => x.Pull(It.IsAny<string>(), It.IsAny<CheckoutFileConflictStrategy>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
         public void Test_Make_Url_Friendly()
         {
             string safeName = "Docklands Enterprise Ltd.".MakeUrlFriendly();

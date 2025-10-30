@@ -140,6 +140,39 @@ namespace GitTracker.Repositories
             return fileContents;
         }
 
+        public bool CheckRemoteHasCommits(string username)
+        {
+            using (var repo = RemoteRepo)
+            {
+                FetchOptions fetchOptions = new FetchOptions();
+                if (!string.IsNullOrEmpty(_gitConfig.Token))
+                {
+                    CredentialsHandler credentialsProvider = (url, usernameFromUrl, types) =>
+                        new UsernamePasswordCredentials
+                        {
+                            Username = username,
+                            Password = _gitConfig.Token
+                        };
+
+                    fetchOptions =
+                        new FetchOptions
+                        {
+                            CredentialsProvider = credentialsProvider,
+                        };
+                }
+
+                if (repo.Network.Remotes["origin"] == null)
+                {
+                    repo.Network.Remotes.Add("origin", _gitConfig.RemotePath);
+                }
+
+                Remote remote = repo.Network.Remotes["origin"];
+                var refSpecs = remote.FetchRefSpecs.Select(x => x.Specification);
+                Commands.Fetch(repo, remote.Name, refSpecs, fetchOptions, string.Empty);
+                return repo.Commits.Any();
+            }
+        }
+
         public RevertStatus RevertCommit(string commitId, string email, string userName = null)
         {
             RevertStatus revertStatus;
@@ -305,8 +338,6 @@ namespace GitTracker.Repositories
 
                 SetupAndTrack(repo, username ?? email);
 
-                
-
                 // Credential information to fetch
                 PushOptions options = new PushOptions();
                 if (!string.IsNullOrEmpty(_gitConfig.Token))
@@ -331,8 +362,6 @@ namespace GitTracker.Repositories
 
             return true;
         }
-
-
 
         private void SetupAndTrack(Repository repo, string userName)
         {
@@ -363,7 +392,6 @@ namespace GitTracker.Repositories
 
             if (currentBranch == null)
             {
-
                 var refSpecs = remote.FetchRefSpecs.Select(x => x.Specification);
                 Commands.Fetch(repo, remote.Name, refSpecs, fetchOptions, string.Empty);
 

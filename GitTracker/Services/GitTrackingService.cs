@@ -158,6 +158,13 @@ namespace GitTracker.Services
                 throw new Exception("Can not sync when you have pending changes!");
             }
 
+            var remoteHasCommits = _gitRepo.CheckRemoteHasCommits(email);
+            if (!remoteHasCommits)
+            {
+                _logger.LogInformation("Remote repository has no commits. Skipping pull operation.");
+                return true;
+            }
+
             // if this is the first pull then no need to check the diff
             var commits = _gitRepo.GetCommits();
             if (!commits.Any())

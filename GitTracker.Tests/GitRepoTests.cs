@@ -291,5 +291,23 @@ namespace GitTracker.Tests
             // Cleanup
             Directory.Delete(newRepoPath, true);
         }
+
+        [Fact]
+        public void Test_Check_Remote_Has_Commits_Returns_True()
+        {
+            // Push a commit to remote first
+            GitRepo.Push(Email);
+            
+            bool result = GitRepo.CheckRemoteHasCommits(Email);
+            
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void Test_Check_Remote_Has_Commits_Returns_False()
+        {
+            bool result = GitRepo.CheckRemoteHasCommits(Email);
+            Assert.False(result);
+        }
     }
 }

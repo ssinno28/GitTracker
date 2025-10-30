@@ -41,5 +41,6 @@ namespace GitTracker.Interfaces
         bool RepositoryExists();
         string GetMergeCommitMessage();
         bool InitializeRepository(string folderPath, bool bare = false);
+        bool CheckRemoteHasCommits(string username);
     }
 }
