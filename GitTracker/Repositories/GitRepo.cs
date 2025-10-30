@@ -322,12 +322,6 @@ namespace GitTracker.Repositories
 
         public bool Push(string email, string username = null)
         {
-            if (string.IsNullOrEmpty(_gitConfig.Token))
-            {
-                _logger.LogWarning($"Could not pull from git repo ${_gitConfig.RemotePath} because there is no token.");
-                return false;
-            }
-
             using (var repo = LocalRepo)
             {
                 if (repo.Network.Remotes["origin"] == null && string.IsNullOrEmpty(_gitConfig.RemotePath))
