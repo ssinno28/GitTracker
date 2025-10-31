@@ -196,6 +196,48 @@ namespace GitTracker.Services
             return true;
         }
 
+        public async Task ResetFileChanges(TrackedItemDiff diff)
+        {
+            var contentItem = diff.Initial ?? diff.Final;
+            var relativePath = _pathProvider.GetRelativeTrackedItemPath(contentItem.GetType(), contentItem);
+            if (diff.TrackedItemGitDiff.ChangeKind == ChangeKind.Added)
+            {
+                await _fileProvider.DeleteFiles(contentItem);
+            }
+            else
+            {
+                _gitRepo.ResetFileChanges(relativePath);
+            }
+
+            foreach (var valueProviderDiff in diff.ValueProviderDiffs)
+            {
+                if (valueProviderDiff.ChangeKind == ChangeKind.Added)
+                {
+                    var contentItemPath =
+                        _pathProvider.GetTrackedItemPath(contentItem.GetType(), contentItem);
+
+                    await _fileProvider.DeleteFile(Path.Combine(contentItemPath, Path.GetFileName(valueProviderDiff.Path)));
+                }
+                else
+                {
+                    _gitRepo.ResetFileChanges(valueProviderDiff.Path);
+                }
+            }
+
+            if (diff.TrackedItemGitDiff.ChangeKind == ChangeKind.Added)
+            {
+                await PerformDelete(contentItem);
+            }
+            else if (diff.TrackedItemGitDiff.ChangeKind == ChangeKind.Deleted)
+            {
+                await PerformCreate(contentItem);
+            }
+            else
+            {
+                await PerformUpdate(contentItem);
+            }
+        }
+
         private async Task PerformOpsBasedOnDiff(IList<GitDiff> diff, string currentCommitId)
         {
             foreach (var gitDiff in diff)

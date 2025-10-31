@@ -2,6 +2,7 @@
 using System.IO;
 using System.IO.Abstractions;
 using System.Reflection;
+using System.Threading.Tasks;
 using GitTracker.Interfaces;
 using GitTracker.Models;
 using GitTracker.Providers;
@@ -68,6 +69,48 @@ namespace GitTracker.Tests
                 });
 
             Assert.Equal(trackedItemPath, _fileProvider.GetTrackedItemJsonForPath(markdownPath));
+        }
+
+        [Fact]
+        public async Task Test_Delete_File()
+        {
+            // Arrange
+            string filePath = Path.Combine(_localPath, "test-file.json");
+            _mockFileSystem
+                .Setup(x => x.File.Delete(filePath))
+                .Verifiable();
+
+            _mockFileSystem
+                .Setup(x => x.File.Exists(filePath))
+                .Returns(true);
+
+            // Act
+            bool result = await _fileProvider.DeleteFile(filePath);
+
+            // Assert
+            _mockFileSystem.Verify(x => x.File.Delete(filePath), Times.Once);
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task Test_Delete_File_Doesnt_Exist()
+        {
+            // Arrange
+            string filePath = Path.Combine(_localPath, "test-file.json");
+            _mockFileSystem
+                .Setup(x => x.File.Delete(filePath))
+                .Verifiable();
+
+            _mockFileSystem
+                .Setup(x => x.File.Exists(filePath))
+                .Returns(false);
+
+            // Act
+            bool result = await _fileProvider.DeleteFile(filePath);
+
+            // Assert
+            _mockFileSystem.Verify(x => x.File.Delete(filePath), Times.Never);
+            Assert.True(result);
         }
     }
 }

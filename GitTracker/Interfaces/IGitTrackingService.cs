@@ -234,5 +234,7 @@ namespace GitTracker.Interfaces
         /// <param name="name"></param>
         /// <returns></returns>
         Task<IList<TrackedItem>> Commit(string message, string email, string name = null);
+
+        Task ResetFileChanges(TrackedItemDiff diff);
     }
 }

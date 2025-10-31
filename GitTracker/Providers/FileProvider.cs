@@ -102,6 +102,27 @@ namespace GitTracker.Providers
             });
         }
 
+        public async Task<bool> DeleteFile(string path)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    if (_fileSystem.File.Exists(path))
+                    {
+                        _fileSystem.File.Delete(path);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Could not delete file {0}, error {1}", path, ex);
+                    return false;
+                }
+
+                return true;
+            });
+        }
+
         public async Task<bool> UpsertFiles(params TrackedItem[] trackedItems)
         {
             return await Task.Run(() =>

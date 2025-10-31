@@ -260,6 +260,274 @@ namespace GitTracker.Tests
             Assert.Equal("Final", result[0].Final.Name);
         }
 
+        [Fact]
+        public async Task Test_ResetFileChanges_With_Added_ChangeKind_Calls_DeleteFiles_And_PerformDelete()
+        {
+            // Arrange
+            var blogPost = new BlogPost
+            {
+                Id = "test-id",
+                Name = "Test Blog Post"
+            };
+
+            var diff = new TrackedItemDiff
+            {
+                Final = blogPost,
+                TrackedItemGitDiff = new GitDiff
+                {
+                    Path = "/blog-posts/test-blog-post.json",
+                    ChangeKind = ChangeKind.Added
+                },
+                ValueProviderDiffs = new List<GitDiff>()
+            };
+
+            _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost))
+                .Returns("/blog-posts/test-blog-post.json");
+
+            _mockFileProvider.Setup(x => x.DeleteFiles(It.IsAny<TrackedItem[]>()))
+                .Returns(Task.FromResult(true));
+
+            _mockDeleteOperation.Setup(x => x.IsMatch(typeof(BlogPost)))
+                .Returns(true);
+
+            // Act
+            await _gitTrackingService.ResetFileChanges(diff);
+
+            // Assert
+            _mockFileProvider.Verify(x => x.DeleteFiles(blogPost), Times.Once);
+            _mockDeleteOperation.Verify(x => x.Delete(blogPost), Times.Once);
+            _mockGitRepo.Verify(x => x.ResetFileChanges(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Test_ResetFileChanges_With_Added_ChangeKind_And_ValueProviderDiffs_Calls_DeleteFile()
+        {
+            // Arrange
+            var blogPost = new BlogPost
+            {
+                Id = "test-id",
+                Name = "Test Blog Post"
+            };
+
+            var valueProviderDiff = new GitDiff
+            {
+                Path = "/blog-posts/test-blog-post/body.md",
+                ChangeKind = ChangeKind.Added
+            };
+
+            var diff = new TrackedItemDiff
+            {
+                Final = blogPost,
+                TrackedItemGitDiff = new GitDiff
+                {
+                    Path = "/blog-posts/test-blog-post.json",
+                    ChangeKind = ChangeKind.Added
+                },
+                ValueProviderDiffs = new List<GitDiff> { valueProviderDiff }
+            };
+
+            _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost))
+                .Returns("/blog-posts/test-blog-post.json");
+
+            _mockPathProvider.Setup(x => x.GetTrackedItemPath(typeof(BlogPost), blogPost))
+                .Returns("/local/blog-posts/test-blog-post");
+
+            _mockFileProvider.Setup(x => x.DeleteFiles(It.IsAny<TrackedItem[]>()))
+                .Returns(Task.FromResult(true));
+
+            _mockFileProvider.Setup(x => x.DeleteFile(It.IsAny<string>()))
+                .Returns(Task.FromResult(true));
+
+            _mockDeleteOperation.Setup(x => x.IsMatch(typeof(BlogPost)))
+                .Returns(true);
+
+            // Act
+            await _gitTrackingService.ResetFileChanges(diff);
+
+            // Assert
+            _mockFileProvider.Verify(x => x.DeleteFiles(blogPost), Times.Once);
+            _mockFileProvider.Verify(x => x.DeleteFile(It.IsAny<string>()), Times.Once);
+            _mockDeleteOperation.Verify(x => x.Delete(blogPost), Times.Once);
+        }
+
+        [Fact]
+        public async Task Test_ResetFileChanges_With_Modified_ChangeKind_Calls_GitRepo_ResetFileChanges()
+        {
+            // Arrange
+            var blogPost = new BlogPost
+            {
+                Id = "test-id",
+                Name = "Test Blog Post"
+            };
+
+            var diff = new TrackedItemDiff
+            {
+                Initial = blogPost,
+                Final = blogPost,
+                TrackedItemGitDiff = new GitDiff
+                {
+                    Path = "/blog-posts/test-blog-post.json",
+                    ChangeKind = ChangeKind.Modified
+                },
+                ValueProviderDiffs = new List<GitDiff>()
+            };
+
+            _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost))
+                .Returns("/blog-posts/test-blog-post.json");
+
+            _mockGitRepo.Setup(x => x.ResetFileChanges(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            _mockUpdateOperation.Setup(x => x.IsMatch(typeof(BlogPost)))
+                .Returns(true);
+
+            // Act
+            await _gitTrackingService.ResetFileChanges(diff);
+
+            // Assert
+            _mockGitRepo.Verify(x => x.ResetFileChanges("/blog-posts/test-blog-post.json", null), Times.Once);
+            _mockUpdateOperation.Verify(x => x.Update(blogPost), Times.Once);
+            _mockFileProvider.Verify(x => x.DeleteFiles(It.IsAny<TrackedItem[]>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Test_ResetFileChanges_With_Deleted_ChangeKind_Calls_PerformCreate()
+        {
+            // Arrange
+            var blogPost = new BlogPost
+            {
+                Id = "test-id",
+                Name = "Test Blog Post"
+            };
+
+            var diff = new TrackedItemDiff
+            {
+                Initial = blogPost,
+                TrackedItemGitDiff = new GitDiff
+                {
+                    Path = "/blog-posts/test-blog-post.json",
+                    ChangeKind = ChangeKind.Deleted
+                },
+                ValueProviderDiffs = new List<GitDiff>()
+            };
+
+            _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost))
+                .Returns("/blog-posts/test-blog-post.json");
+
+            _mockGitRepo.Setup(x => x.ResetFileChanges(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            _mockCreateOperation.Setup(x => x.IsMatch(typeof(BlogPost)))
+                .Returns(true);
+
+            // Act
+            await _gitTrackingService.ResetFileChanges(diff);
+
+            // Assert
+            _mockGitRepo.Verify(x => x.ResetFileChanges("/blog-posts/test-blog-post.json", null), Times.Once);
+            _mockCreateOperation.Verify(x => x.Create(blogPost), Times.Once);
+        }
+
+        [Fact]
+        public async Task Test_ResetFileChanges_Uses_Initial_When_Final_Is_Null()
+        {
+            // Arrange
+            var blogPost = new BlogPost
+            {
+                Id = "test-id",
+                Name = "Test Blog Post"
+            };
+
+            var diff = new TrackedItemDiff
+            {
+                Initial = blogPost,
+                Final = null,
+                TrackedItemGitDiff = new GitDiff
+                {
+                    Path = "/blog-posts/test-blog-post.json",
+                    ChangeKind = ChangeKind.Deleted
+                },
+                ValueProviderDiffs = new List<GitDiff>()
+            };
+
+            _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost))
+                .Returns("/blog-posts/test-blog-post.json");
+
+            _mockGitRepo.Setup(x => x.ResetFileChanges(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            _mockCreateOperation.Setup(x => x.IsMatch(typeof(BlogPost)))
+                .Returns(true);
+
+            // Act
+            await _gitTrackingService.ResetFileChanges(diff);
+
+            // Assert
+            _mockPathProvider.Verify(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost), Times.Once);
+            _mockCreateOperation.Verify(x => x.Create(blogPost), Times.Once);
+        }
+
+        [Fact]
+        public async Task Test_ResetFileChanges_With_Mixed_ValueProviderDiffs()
+        {
+            // Arrange
+            var blogPost = new BlogPost
+            {
+                Id = "test-id",
+                Name = "Test Blog Post"
+            };
+
+            var addedValueProviderDiff = new GitDiff
+            {
+                Path = "/blog-posts/test-blog-post/body.md",
+                ChangeKind = ChangeKind.Added
+            };
+
+            var modifiedValueProviderDiff = new GitDiff
+            {
+                Path = "/blog-posts/test-blog-post/summary.md",
+                ChangeKind = ChangeKind.Modified
+            };
+
+            var diff = new TrackedItemDiff
+            {
+                Final = blogPost,
+                TrackedItemGitDiff = new GitDiff
+                {
+                    Path = "/blog-posts/test-blog-post.json",
+                    ChangeKind = ChangeKind.Added
+                },
+                ValueProviderDiffs = new List<GitDiff> { addedValueProviderDiff, modifiedValueProviderDiff }
+            };
+
+            _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost))
+                .Returns("/blog-posts/test-blog-post.json");
+
+            _mockPathProvider.Setup(x => x.GetTrackedItemPath(typeof(BlogPost), blogPost))
+                .Returns("/local/blog-posts/test-blog-post");
+
+            _mockFileProvider.Setup(x => x.DeleteFiles(It.IsAny<TrackedItem[]>()))
+                .Returns(Task.FromResult(true));
+
+            _mockFileProvider.Setup(x => x.DeleteFile(It.IsAny<string>()))
+                .Returns(Task.FromResult(true));
+
+            _mockGitRepo.Setup(x => x.ResetFileChanges(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            _mockDeleteOperation.Setup(x => x.IsMatch(typeof(BlogPost)))
+                .Returns(true);
+
+            // Act
+            await _gitTrackingService.ResetFileChanges(diff);
+
+            // Assert
+            _mockFileProvider.Verify(x => x.DeleteFiles(blogPost), Times.Once);
+            _mockFileProvider.Verify(x => x.DeleteFile(It.IsAny<string>()), Times.Once);
+            _mockGitRepo.Verify(x => x.ResetFileChanges("/blog-posts/test-blog-post/summary.md", null), Times.Once);
+            _mockDeleteOperation.Verify(x => x.Delete(blogPost), Times.Once);
+        }
+
         // Helper class for testing - a TrackedItem type not in GitConfig.TrackedTypes
         public class UnknownTrackedItem : TrackedItem
         {
