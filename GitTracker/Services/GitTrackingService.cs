@@ -651,6 +651,10 @@ namespace GitTracker.Services
         {
             var stagedFiles = _gitRepo.GetStagedItems();
             string commitId = _gitRepo.Commit(message, email, name);
+            if (string.IsNullOrEmpty(commitId))
+            {
+                return null;
+            }
 
             IList<TrackedItem> trackedItems = new List<TrackedItem>();
             foreach (var stagedFile in stagedFiles)

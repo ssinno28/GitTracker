@@ -528,6 +528,70 @@ namespace GitTracker.Tests
             _mockDeleteOperation.Verify(x => x.Delete(blogPost), Times.Once);
         }
 
+        [Fact]
+        public async Task Test_Commit_Returns_Null_When_GitRepo_Commit_Returns_Empty_String()
+        {
+            // Arrange
+            var diffs = new List<GitDiff>
+            {
+                new GitDiff
+                {
+                    Path = "/blog-posts/test-blog-post.json",
+                    ChangeKind = ChangeKind.Modified,
+                    FinalFileContent = "{\"Id\":\"1\",\"Name\":\"Test Blog Post\",\"TypeDefinition\":\"BlogPost\"}"
+                }
+            };
+
+            _mockGitRepo.Setup(x => x.GetStagedItems())
+                .Returns(new List<string> { "/blog-posts/test-blog-post.json" });
+
+            _mockGitRepo.Setup(x => x.Commit(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(string.Empty); // Returns empty string to simulate failed commit
+
+            _mockFileProvider.Setup(x => x.GetTrackedItemJsonForPath(It.IsAny<string>()))
+                .Returns("{\"Id\":\"1\",\"Name\":\"Test Blog Post\",\"TypeDefinition\":\"BlogPost\"}");
+
+            // Act
+            var result = await _gitTrackingService.Commit("Test commit message", "test@example.com", "testuser");
+
+            // Assert
+            Assert.Null(result);
+            _mockGitRepo.Verify(x => x.Commit("Test commit message", "test@example.com", "testuser"), Times.Once);
+            _mockFileProvider.Verify(x => x.GetTrackedItemJsonForPath(It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Test_Commit_Returns_Null_When_GitRepo_Commit_Returns_Null()
+        {
+            // Arrange
+            var diffs = new List<GitDiff>
+            {
+                new GitDiff
+                {
+                    Path = "/blog-posts/test-blog-post.json",
+                    ChangeKind = ChangeKind.Modified,
+                    FinalFileContent = "{\"Id\":\"1\",\"Name\":\"Test Blog Post\",\"TypeDefinition\":\"BlogPost\"}"
+                }
+            };
+
+            _mockGitRepo.Setup(x => x.GetStagedItems())
+                .Returns(new List<string> { "/blog-posts/test-blog-post.json" });
+
+            _mockGitRepo.Setup(x => x.Commit(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns((string)null); // Returns null to simulate failed commit
+
+            _mockFileProvider.Setup(x => x.GetTrackedItemJsonForPath(It.IsAny<string>()))
+                .Returns("{\"Id\":\"1\",\"Name\":\"Test Blog Post\",\"TypeDefinition\":\"BlogPost\"}");
+
+            // Act
+            var result = await _gitTrackingService.Commit("Test commit message", "test@example.com", "testuser");
+
+            // Assert
+            Assert.Null(result);
+            _mockGitRepo.Verify(x => x.Commit("Test commit message", "test@example.com", "testuser"), Times.Once);
+            _mockFileProvider.Verify(x => x.GetTrackedItemJsonForPath(It.IsAny<string>()), Times.Never);
+        }
+
         // Helper class for testing - a TrackedItem type not in GitConfig.TrackedTypes
         public class UnknownTrackedItem : TrackedItem
         {
