@@ -91,6 +91,8 @@ namespace GitTracker.Tests
             Assert.Equal(ChangeKind.Deleted, deletedDiff.ChangeKind);
         }
 
+
+
         [Fact]
         public void Test_Checkout_Deleted_Path()
         {
@@ -308,6 +310,56 @@ namespace GitTracker.Tests
         {
             bool result = GitRepo.CheckRemoteHasCommits(Email);
             Assert.False(result);
+        }
+
+        [Fact]
+        public void Test_Get_Diff_From_Older_Commit_With_Deleted_File()
+        {
+            // Create and commit a second file
+            string filePath = Path.Combine(LocalPath, "fileToDelete.txt");
+            File.WriteAllText(filePath, "This file will be deleted");
+            GitRepo.Stage(filePath);
+            string secondCommitId = GitRepo.Commit("add file that will be deleted", Email);
+
+            // Delete the file and commit the deletion
+            File.Delete(filePath);
+            GitRepo.Stage(filePath);
+            string thirdCommitId = GitRepo.Commit("delete the file", Email);
+
+            // Get diff from the older commit where the file existed
+            var diff = GitRepo.GetDiff(new List<string>(), secondCommitId);
+            var addedDiff = diff.First(x => x.Path.Equals("fileToDelete.txt"));
+
+            Assert.NotEmpty(diff);
+            Assert.Equal(ChangeKind.Added, addedDiff.ChangeKind);
+            Assert.Equal("fileToDelete.txt", addedDiff.Path);
+        }
+
+        [Fact]
+        public void Test_Get_Diff_From_Older_Commit_With_Deleted_File_In_Subfolder()
+        {
+            // Create a subfolder
+            string subfolderPath = Path.Combine(LocalPath, "testfolder");
+            Directory.CreateDirectory(subfolderPath);
+            
+            // Create and commit a second file in the subfolder
+            string filePath = Path.Combine(subfolderPath, "fileToDelete.txt");
+            File.WriteAllText(filePath, "This file will be deleted");
+            GitRepo.Stage(filePath);
+            string secondCommitId = GitRepo.Commit("add file that will be deleted", Email);
+
+            // Delete the file and commit the deletion
+            File.Delete(filePath);
+            GitRepo.Stage(filePath);
+            string thirdCommitId = GitRepo.Commit("delete the file", Email);
+
+            // Get diff from the older commit where the file existed, filtering by subfolder
+            var diff = GitRepo.GetDiff(new List<string> { "testfolder" }, secondCommitId);
+            var addedDiff = diff.First(x => x.Path.Equals("testfolder/fileToDelete.txt"));
+
+            Assert.NotEmpty(diff);
+            Assert.Equal(ChangeKind.Added, addedDiff.ChangeKind);
+            Assert.Equal("testfolder/fileToDelete.txt", addedDiff.Path);
         }
     }
 }

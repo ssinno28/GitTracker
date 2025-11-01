@@ -686,7 +686,12 @@ namespace GitTracker.Repositories
                 {
                     foreach (var path in paths)
                     {
-                        commitList.AddRange(repo.Commits.QueryBy(path)
+                        var commitFilter = new CommitFilter
+                        {
+                            IncludeReachableFrom = id
+                        };
+
+                        commitList.AddRange(repo.Commits.QueryBy(path, commitFilter)
                             .ToList()
                             .Select(entry => entry.Commit)
                             .ToList()); 
@@ -695,7 +700,7 @@ namespace GitTracker.Repositories
 
                 commitList.Add(null); // Added to show correct initial add
 
-                var commitToView = commitList.First(x => x != null && x.Id.ToString().Equals(id));
+                var commitToView = commitList.First(x => x.Id.ToString().Equals(id));
                 int indexOfCommit = commitList.IndexOf(commitToView);
 
                 Patch repoDifferences;
