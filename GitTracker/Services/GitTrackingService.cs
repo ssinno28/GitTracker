@@ -285,7 +285,10 @@ namespace GitTracker.Services
             string currentCommitId = null, string newCommitId = null)
         {
             string path = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
-            return await GetTrackedItemDiffs(new List<string> { path }, currentCommitId, newCommitId);
+            var paths = new List<string> { path };
+            paths.AddRange(trackedItem.PreviousPaths);
+
+            return await GetTrackedItemDiffs(paths, currentCommitId, newCommitId);
         }
 
         private async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(IList<string> paths, string currentCommitId = null, string newCommitId = null)

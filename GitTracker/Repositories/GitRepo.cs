@@ -689,13 +689,13 @@ namespace GitTracker.Repositories
                         commitList.AddRange(repo.Commits.QueryBy(path)
                             .ToList()
                             .Select(entry => entry.Commit)
-                            .ToList());
+                            .ToList()); 
                     }
                 }
 
                 commitList.Add(null); // Added to show correct initial add
 
-                var commitToView = commitList.First(x => x.Id.ToString().Equals(id));
+                var commitToView = commitList.First(x => x != null && x.Id.ToString().Equals(id));
                 int indexOfCommit = commitList.IndexOf(commitToView);
 
                 Patch repoDifferences;
