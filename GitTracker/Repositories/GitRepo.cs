@@ -142,7 +142,7 @@ namespace GitTracker.Repositories
 
         public bool CheckRemoteHasCommits(string username)
         {
-            using (var repo = RemoteRepo)
+            using (var repo = LocalRepo)
             {
                 FetchOptions fetchOptions = new FetchOptions();
                 if (!string.IsNullOrEmpty(_gitConfig.Token))
@@ -169,7 +169,12 @@ namespace GitTracker.Repositories
                 Remote remote = repo.Network.Remotes["origin"];
                 var refSpecs = remote.FetchRefSpecs.Select(x => x.Specification);
                 Commands.Fetch(repo, remote.Name, refSpecs, fetchOptions, string.Empty);
-                return repo.Commits.Any();
+
+                // Check if remote tracking branch exists and has commits
+                var currentBranch = GetCurrentBranch() ?? "master";
+                var remoteTrackingBranch = repo.Branches[$"origin/{currentBranch}"];
+                
+                return remoteTrackingBranch?.Tip != null;
             }
         }
 
