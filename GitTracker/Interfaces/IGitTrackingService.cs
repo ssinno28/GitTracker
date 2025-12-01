@@ -183,6 +183,9 @@ namespace GitTracker.Interfaces
         Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(Type trackedType, string currentCommitId = null,
             string newCommitId = null);
 
+        Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(IList<Type> trackedTypes, string currentCommitId = null,
+            string newCommitId = null);
+
         /// <summary>
         /// Gets all of the diffs between two commits
         /// </summary>

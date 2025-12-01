@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using GitTracker.Helpers;
@@ -590,6 +591,62 @@ namespace GitTracker.Tests
             Assert.Null(result);
             _mockGitRepo.Verify(x => x.Commit("Test commit message", "test@example.com", "testuser"), Times.Once);
             _mockFileProvider.Verify(x => x.GetTrackedItemJsonForPath(It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Test_GetTrackedItemDiffs_With_Multiple_TrackedTypes()
+        {
+            // Arrange
+            var trackedTypes = new List<Type> { typeof(BlogPost), typeof(Models.Tag) };
+
+            var blogPostGuid = Guid.NewGuid();
+            var tagGuid = Guid.NewGuid();
+            var diffs = new List<GitDiff>
+            {
+                new GitDiff
+                {
+                    Path = $"/blog-posts/{blogPostGuid}.json",
+                    ChangeKind = ChangeKind.Modified,
+                    InitialFileContent = "{\"Id\":\"1\",\"Name\":\"Initial Blog Post\",\"TypeDefinition\":\"BlogPost\"}",
+                    FinalFileContent = "{\"Id\":\"1\",\"Name\":\"Final Blog Post\",\"TypeDefinition\":\"BlogPost\"}"
+                },
+                new GitDiff
+                {
+                    Path = $"/tags/{tagGuid}.json", 
+                    ChangeKind = ChangeKind.Added,
+                    FinalFileContent = "{\"Id\":\"2\",\"Name\":\"New Tag\",\"TypeDefinition\":\"Tag\"}"
+                }
+            };
+
+            _mockGitRepo.Setup(x => x.GetDiff(It.IsAny<IList<string>>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(diffs);
+
+            _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), It.IsAny<TrackedItem>()))
+                .Returns("/blog-posts/test-blog-post.json");
+
+            _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(Models.Tag), It.IsAny<TrackedItem>()))
+                .Returns("/tags/test-tag.json");
+
+            // Act
+            var result = await _gitTrackingService.GetTrackedItemDiffs(trackedTypes, "commit1", "commit2");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count);
+            
+            var blogPostDiff = result.FirstOrDefault(x => x.TrackedItemGitDiff.Path == $"/blog-posts/{blogPostGuid}.json");
+            Assert.NotNull(blogPostDiff);
+            Assert.Equal("Initial Blog Post", blogPostDiff.Initial.Name);
+            Assert.Equal("Final Blog Post", blogPostDiff.Final.Name);
+            Assert.Equal(ChangeKind.Modified, blogPostDiff.TrackedItemGitDiff.ChangeKind);
+
+            var tagDiff = result.FirstOrDefault(x => x.TrackedItemGitDiff.Path == $"/tags/{tagGuid}.json");
+            Assert.NotNull(tagDiff);
+            Assert.Null(tagDiff.Initial);
+            Assert.Equal("New Tag", tagDiff.Final.Name);
+            Assert.Equal(ChangeKind.Added, tagDiff.TrackedItemGitDiff.ChangeKind);
+
+            _mockGitRepo.Verify(x => x.GetDiff(It.IsAny<IList<string>>(), "commit1", "commit2"), Times.Once);
         }
 
         // Helper class for testing - a TrackedItem type not in GitConfig.TrackedTypes
