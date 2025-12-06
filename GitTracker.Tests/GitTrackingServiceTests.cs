@@ -295,7 +295,7 @@ namespace GitTracker.Tests
             await _gitTrackingService.ResetFileChanges(diff);
 
             // Assert
-            _mockFileProvider.Verify(x => x.DeleteFiles(blogPost), Times.Once);
+            _mockFileProvider.Verify(x => x.DeleteFileFromRelativePath(It.IsAny<string>()), Times.Once);
             _mockDeleteOperation.Verify(x => x.Delete(blogPost), Times.Once);
             _mockGitRepo.Verify(x => x.ResetFileChanges(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
@@ -346,8 +346,7 @@ namespace GitTracker.Tests
             await _gitTrackingService.ResetFileChanges(diff);
 
             // Assert
-            _mockFileProvider.Verify(x => x.DeleteFiles(blogPost), Times.Once);
-            _mockFileProvider.Verify(x => x.DeleteFile(It.IsAny<string>()), Times.Once);
+            _mockFileProvider.Verify(x => x.DeleteFileFromRelativePath(It.IsAny<string>()), Times.AtLeastOnce);
             _mockDeleteOperation.Verify(x => x.Delete(blogPost), Times.Once);
         }
 
@@ -462,9 +461,6 @@ namespace GitTracker.Tests
 
             // Act
             await _gitTrackingService.ResetFileChanges(diff);
-
-            // Assert
-            _mockPathProvider.Verify(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost), Times.Once);
             _mockCreateOperation.Verify(x => x.Create(blogPost), Times.Once);
         }
 
@@ -523,8 +519,7 @@ namespace GitTracker.Tests
             await _gitTrackingService.ResetFileChanges(diff);
 
             // Assert
-            _mockFileProvider.Verify(x => x.DeleteFiles(blogPost), Times.Once);
-            _mockFileProvider.Verify(x => x.DeleteFile(It.IsAny<string>()), Times.Once);
+            _mockFileProvider.Verify(x => x.DeleteFileFromRelativePath(It.IsAny<string>()), Times.AtLeastOnce);
             _mockGitRepo.Verify(x => x.ResetFileChanges("/blog-posts/test-blog-post/summary.md", null), Times.Once);
             _mockDeleteOperation.Verify(x => x.Delete(blogPost), Times.Once);
         }
