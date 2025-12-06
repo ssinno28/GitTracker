@@ -339,6 +339,29 @@ namespace GitTracker.Tests
             Assert.NotEmpty(diff.First().ValueProviderDiffs);
         }
 
+        [Fact]
+        public async Task Test_Reset_File_Changes()
+        {
+            var trackedItem = await GitTrackingService.Create(new BlogPost()
+            {
+                Name = "My New Blog Post"
+            });
+
+            string contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), trackedItem);
+            string filePath = Path.Combine(contentItemPath, "body.md");
+
+            await File.WriteAllTextAsync(filePath, "My Test Body");
+
+            var diff = await GitTrackingService.GetTrackedItemDiffs();
+            Assert.NotEmpty(diff);
+            Assert.NotEmpty(diff.First().ValueProviderDiffs);
+
+            await GitTrackingService.ResetFileChanges(diff.First());
+
+            var resetDiff = await GitTrackingService.GetTrackedItemDiffs();
+            Assert.Empty(resetDiff);
+        }
+
 
         // TODO: Figure out why test is flaking
         //[Fact]

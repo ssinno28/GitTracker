@@ -24,7 +24,7 @@ namespace GitTracker.Providers
         public FileProvider(
             IPathProvider pathProvider,
             ContentContractResolver contentContractResolver,
-            ILoggerFactory loggerFactory, 
+            ILoggerFactory loggerFactory,
             ILocalPathFactory localPathFactory, IFileSystem fileSystem)
         {
             _pathProvider = pathProvider;
@@ -39,7 +39,7 @@ namespace GitTracker.Providers
             string absolutePath = Path.Combine(_localPathFactory.GetLocalPath(), path);
             return _fileSystem.File.ReadAllText(absolutePath);
         }
-        
+
         public string GetTrackedItemJsonForPath(string path)
         {
             string absolutePath = Path.Combine(_localPathFactory.GetLocalPath(), path);
@@ -111,6 +111,35 @@ namespace GitTracker.Providers
                     if (_fileSystem.File.Exists(path))
                     {
                         _fileSystem.File.Delete(path);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Could not delete file {0}, error {1}", path, ex);
+                    return false;
+                }
+
+                return true;
+            });
+        }
+
+        public async Task<bool> DeleteFileFromRelativePath(string path)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    string repoPath = _localPathFactory.GetLocalPath();
+                    var paths = new List<string>
+                    {
+                        repoPath
+                    };
+                    paths.AddRange(path.Split("/").ToList());
+
+                    string fullPath = Path.Combine(paths.ToArray());
+                    if (_fileSystem.File.Exists(fullPath))
+                    {
+                        _fileSystem.File.Delete(fullPath);
                     }
                 }
                 catch (Exception ex)

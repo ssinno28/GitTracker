@@ -199,24 +199,21 @@ namespace GitTracker.Services
         public async Task ResetFileChanges(TrackedItemDiff diff)
         {
             var contentItem = diff.Initial ?? diff.Final;
-            var relativePath = _pathProvider.GetRelativeTrackedItemPath(contentItem.GetType(), contentItem);
+
             if (diff.TrackedItemGitDiff.ChangeKind == ChangeKind.Added)
             {
-                await _fileProvider.DeleteFiles(contentItem);
+                await _fileProvider.DeleteFileFromRelativePath(diff.TrackedItemGitDiff.Path);
             }
             else
             {
-                _gitRepo.ResetFileChanges(relativePath);
+                _gitRepo.ResetFileChanges(diff.TrackedItemGitDiff.Path);
             }
 
             foreach (var valueProviderDiff in diff.ValueProviderDiffs)
             {
                 if (valueProviderDiff.ChangeKind == ChangeKind.Added)
                 {
-                    var contentItemPath =
-                        _pathProvider.GetTrackedItemPath(contentItem.GetType(), contentItem);
-
-                    await _fileProvider.DeleteFile(Path.Combine(contentItemPath, Path.GetFileName(valueProviderDiff.Path)));
+                    await _fileProvider.DeleteFileFromRelativePath(valueProviderDiff.Path);
                 }
                 else
                 {
