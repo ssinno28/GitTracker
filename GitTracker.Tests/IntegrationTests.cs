@@ -360,6 +360,8 @@ namespace GitTracker.Tests
 
             var resetDiff = await GitTrackingService.GetTrackedItemDiffs();
             Assert.Empty(resetDiff);
+
+            Assert.False(Directory.Exists(contentItemPath));
         }
 
 

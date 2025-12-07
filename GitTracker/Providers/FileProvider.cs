@@ -137,9 +137,15 @@ namespace GitTracker.Providers
                     paths.AddRange(path.Split("/").ToList());
 
                     string fullPath = Path.Combine(paths.ToArray());
+                    string directory = Path.GetDirectoryName(fullPath);
                     if (_fileSystem.File.Exists(fullPath))
                     {
                         _fileSystem.File.Delete(fullPath);
+                    }
+
+                    if (!_fileSystem.Directory.EnumerateFileSystemEntries(directory).Any())
+                    {
+                        _fileSystem.Directory.Delete(directory);
                     }
                 }
                 catch (Exception ex)
