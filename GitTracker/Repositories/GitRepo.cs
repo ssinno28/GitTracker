@@ -469,8 +469,8 @@ namespace GitTracker.Repositories
             string commitId;
             using (var repo = LocalRepo)
             {
-                var currentBranch = repo.Branches.First(x => x.IsCurrentRepositoryHead);
-                commitId = currentBranch.Tip.Id.ToString();
+                var currentBranch = repo.Branches.FirstOrDefault(x => x.IsCurrentRepositoryHead);
+                commitId = currentBranch?.Tip.Id.ToString();
             }
 
             return commitId;
@@ -812,10 +812,18 @@ namespace GitTracker.Repositories
             IList<PatchEntryChanges> patchEntryChanges = new List<PatchEntryChanges>();
             using (var repo = LocalRepo)
             {
-                if (repo.Head.Tip == null) return new List<GitDiff>();
+                Patch repoDifferences;
 
-                var repoDifferences = repo.Diff.Compare<Patch>(repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory);
-
+                if (repo.Head.Tip == null)
+                {
+                    // Empty repository - compare against empty tree
+                    var emptyTree = repo.ObjectDatabase.CreateTree(new TreeDefinition());
+                    repoDifferences = repo.Diff.Compare<Patch>(emptyTree, DiffTargets.Index | DiffTargets.WorkingDirectory);
+                }
+                else
+                {
+                    repoDifferences = repo.Diff.Compare<Patch>(repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory);
+                }
                 try
                 {
                     if (paths != null && paths.Any())

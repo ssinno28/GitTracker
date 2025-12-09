@@ -33,6 +33,20 @@ namespace GitTracker.Tests
         }
 
         [Fact]
+        public void Test_Get_Diff_From_Head_No_Commits()
+        {
+            LocalPathFactoryMock.Setup(x => x.GetLocalPath()).Returns(SecondLocalPath);
+
+            var newContent = "Testing unstage files again";
+            File.WriteAllText(Path.Combine(SecondLocalPath, "fileToCommit.txt"), newContent);
+
+            var diff = GitRepo.GetDiffFromHead();
+
+            Assert.NotEmpty(diff);
+            Assert.Equal(ChangeKind.Added, diff.First().ChangeKind);
+        }
+
+        [Fact]
         public void Test_Push()
         {
             bool result = GitRepo.Push(Email);
