@@ -661,8 +661,8 @@ namespace GitTracker.Services
         public async Task<TrackedItem> GetTrackedItem(Type trackedItemType, TrackedItem trackedItem)
         {
             string path = _pathProvider.GetRelativeTrackedItemPath(trackedItemType, trackedItem);
-            return await GetTrackedItem(Path.Join(path, trackedItem.Id, ".json"));
-        }
+            return await GetTrackedItem(Path.Join(path, $"{trackedItem.Id}.json"));
+    }
 
         public async Task<IList<TrackedItem>> Commit(string message, string email, string name = null)
         {
