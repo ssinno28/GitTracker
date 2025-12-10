@@ -229,6 +229,8 @@ namespace GitTracker.Interfaces
         /// <returns></returns>
         Task<IList<TrackedItem>> GetTrackedItemsFromSource(IList<Type> trackedItemTypes);
 
+        Task<TrackedItem> GetTrackedItem(Type trackedItemType, TrackedItem trackedItem);
+
         /// <summary>
         /// Commits all current work and returns the tracked items that were committed
         /// </summary>

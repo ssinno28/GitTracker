@@ -651,12 +651,17 @@ namespace GitTracker.Services
             foreach (var document in documents)
             {
                 var trackedItem = await DeserializeContentItem(document);
-                await SetNonJsonValues(trackedItem);
 
                 trackedItems.Add(trackedItem);
             }
 
             return trackedItems;
+        }
+
+        public async Task<TrackedItem> GetTrackedItem(Type trackedItemType, TrackedItem trackedItem)
+        {
+            string path = _pathProvider.GetRelativeTrackedItemPath(trackedItemType, trackedItem);
+            return await GetTrackedItem(path);
         }
 
         public async Task<IList<TrackedItem>> Commit(string message, string email, string name = null)
