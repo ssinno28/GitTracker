@@ -295,7 +295,11 @@ namespace GitTracker.Services
         {
             string path = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
             var paths = new List<string> { path };
-            paths.AddRange(trackedItem.PreviousPaths);
+
+            if (trackedItem.PreviousPaths != null)
+            {
+                paths.AddRange(trackedItem.PreviousPaths);
+            }
 
             return await GetTrackedItemDiffs(paths, currentCommitId, newCommitId);
         }
@@ -393,7 +397,10 @@ namespace GitTracker.Services
                 _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
 
             var paths = new List<string> { relativeTrackedItemPath };
-            paths.AddRange(trackedItem.PreviousPaths);
+            if (trackedItem.PreviousPaths != null)
+            {
+                paths.AddRange(trackedItem.PreviousPaths);
+            }
 
             history.Commits = _gitRepo.GetCommits(page, pageSize, paths);
             history.Count = _gitRepo.Count(paths);
@@ -694,6 +701,8 @@ namespace GitTracker.Services
 
         public async Task<TrackedItem> ChangeName(string newName, TrackedItem trackedItem)
         {
+            trackedItem.PreviousPaths ??= new List<string>();
+
             // make sure we add the previous path before changing the name!
             trackedItem.PreviousPaths.Add(_pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem));
 
