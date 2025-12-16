@@ -296,7 +296,7 @@ namespace GitTracker.Services
             string path = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
             var paths = new List<string> { path };
 
-            if (trackedItem.PreviousPaths != null)
+            if (trackedItem.PreviousPaths != null && trackedItem.PreviousPaths.Any())
             {
                 paths.AddRange(trackedItem.PreviousPaths);
             }
@@ -397,7 +397,7 @@ namespace GitTracker.Services
                 _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
 
             var paths = new List<string> { relativeTrackedItemPath };
-            if (trackedItem.PreviousPaths != null)
+            if (trackedItem.PreviousPaths != null && trackedItem.PreviousPaths.Any())
             {
                 paths.AddRange(trackedItem.PreviousPaths);
             }
