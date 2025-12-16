@@ -959,19 +959,33 @@ namespace GitTracker.Repositories
                 {
                     foreach (var path in paths)
                     {
-                        foreach (var logEntry in repo.Commits.QueryBy(path))
+                        try
                         {
-                            bool isPushed = remoteTrackingBranch != null &&
-                                repo.ObjectDatabase.FindMergeBase(logEntry.Commit, remoteTrackingBranch.Tip) == logEntry.Commit;
-
-                            commits.Add(new GitCommit
+                            foreach (var logEntry in repo.Commits.QueryBy(path))
                             {
-                                Author = logEntry.Commit.Author.Name,
-                                Date = logEntry.Commit.Author.When,
-                                Message = logEntry.Commit.Message,
-                                Id = logEntry.Commit.Id.ToString(),
-                                Published = isPushed
-                            });
+                                try
+                                {
+                                    bool isPushed = remoteTrackingBranch != null &&
+                                        repo.ObjectDatabase.FindMergeBase(logEntry.Commit, remoteTrackingBranch.Tip) == logEntry.Commit;
+
+                                    commits.Add(new GitCommit
+                                    {
+                                        Author = logEntry.Commit.Author.Name,
+                                        Date = logEntry.Commit.Author.When,
+                                        Message = logEntry.Commit.Message,
+                                        Id = logEntry.Commit.Id.ToString(),
+                                        Published = isPushed
+                                    });
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogDebug(ex, $"Skipping commit {logEntry.Commit.Id} for path {path} - path may not exist in this commit");
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, $"Could not query commits for path: {path}");
                         }
                     }
 
