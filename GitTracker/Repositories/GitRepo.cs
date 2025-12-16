@@ -173,7 +173,7 @@ namespace GitTracker.Repositories
                 // Check if remote tracking branch exists and has commits
                 var currentBranch = GetCurrentBranch() ?? "master";
                 var remoteTrackingBranch = repo.Branches[$"origin/{currentBranch}"];
-                
+
                 return remoteTrackingBranch?.Tip != null;
             }
         }
@@ -645,12 +645,29 @@ namespace GitTracker.Repositories
 
         public int Count(IList<string> paths = null)
         {
-            int count;
+            int count = 0;
             using (var repo = LocalRepo)
             {
                 if (paths != null && paths.Any())
                 {
-                    count = paths.Sum(path => repo.Commits.QueryBy(path).Count());
+                    // Use a HashSet to avoid counting duplicate commits across multiple paths
+                    var uniqueCommitIds = new HashSet<string>();
+                    foreach (var path in paths)
+                    {
+                        try
+                        {
+                            foreach (var logEntry in repo.Commits.QueryBy(path))
+                            {
+                                uniqueCommitIds.Add(logEntry.Commit.Id.ToString());
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, $"Could not query commits for path: {path}");
+                        }
+                    }
+                    
+                    count = uniqueCommitIds.Count;
                 }
                 else
                 {
@@ -699,7 +716,7 @@ namespace GitTracker.Repositories
                         commitList.AddRange(repo.Commits.QueryBy(path, commitFilter)
                             .ToList()
                             .Select(entry => entry.Commit)
-                            .ToList()); 
+                            .ToList());
                     }
                 }
 
