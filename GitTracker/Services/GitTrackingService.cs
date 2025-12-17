@@ -654,7 +654,7 @@ namespace GitTracker.Services
         {
             string path = _pathProvider.GetRelativeTrackedItemPath(trackedItemType, trackedItem);
             return await GetTrackedItem(Path.Join(path, $"{trackedItem.Id}.json"));
-    }
+        }
 
         public async Task<IList<TrackedItem>> Commit(string message, string email, string name = null)
         {
@@ -691,7 +691,14 @@ namespace GitTracker.Services
             var currentContentItemPath = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
             trackedItem.Name = newName;
 
-             var newContentItemPath = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
+
+            var newContentItemAbsolutePath = _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
+            if (Directory.Exists(newContentItemAbsolutePath))
+            {
+                throw new Exception("TrackedItem with this name already exists!");
+            }
+
+            var newContentItemPath = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
             _gitRepo.MoveFile(currentContentItemPath, newContentItemPath);
 
             await Commit(commitMsg, email, userName);
