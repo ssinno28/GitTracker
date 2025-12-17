@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using GitTracker.Tests.Models;
 using LibGit2Sharp;
@@ -29,36 +30,28 @@ namespace GitTracker.Tests
         {
             var commits = GitTrackingService.GetHistory(_initialTrackedItem);
             Assert.Equal("My First Commit\n", commits.Commits.First().Message);
-        }        
-        
-        // TODO: fix getting history for renamed items
-        //[Fact]
-        //public async Task Test_Get_History_For_Moved_TrackedItem()
-        //{
-        //    var commits = GitTrackingService.GetHistory(_initialTrackedItem);
-        //    Assert.Equal("My First Commit\n", commits.Commits.First().Message);
+        }
 
-        //    var newBlogPost = await GitTrackingService.ChangeName("My New Name", _initialTrackedItem);
-        //    GitTrackingService.Stage(newBlogPost);
+       [Fact]
+        public async Task Test_Get_History_For_Moved_TrackedItem()
+        {
+            var commits = GitTrackingService.GetHistory(_initialTrackedItem);
+            Assert.Equal("My First Commit\n", commits.Commits.First().Message);
 
-        //    GitRepo.Commit("My Second Commit", Email);
+            var newBlogPost = await GitTrackingService.ChangeName("My New Name", _initialTrackedItem, Email);
 
-        //    var newCommits = GitTrackingService.GetHistory(newBlogPost);
-        //    Assert.Equal(2, newCommits.Count);
-        //    Assert.Equal("My First Commit\n", newCommits.Commits[1].Message);
-        //}
+            var newCommits = GitTrackingService.GetHistory(newBlogPost);
+            Assert.Equal(3, newCommits.Count);
+        }
 
         [Fact]
         public async Task Test_Change_Name()
         {
-            var previousPath =
-                PathProvider.GetRelativeTrackedItemPath(_initialTrackedItem.GetType(), _initialTrackedItem);
-            var blogPost = await GitTrackingService.ChangeName("Changed Name", _initialTrackedItem);
+            var blogPost = await GitTrackingService.ChangeName("Changed Name", _initialTrackedItem, Email);
 
             var newPath =
                 PathProvider.GetRelativeTrackedItemPath(blogPost.GetType(), blogPost);
 
-            Assert.Contains(previousPath, blogPost.PreviousPaths);
             Assert.Equal("BlogPost/changed-name", newPath);
 
             string fullPathToFile = Path.Combine(LocalPath, "BlogPost", "changed-name", $"{blogPost.Id}.json");
@@ -69,7 +62,7 @@ namespace GitTracker.Tests
         public async Task Test_Change_Name_Fail()
         {
             await Assert.ThrowsAnyAsync<Exception>(async () =>
-                await GitTrackingService.ChangeName("Test Blog Post", _initialTrackedItem));
+                await GitTrackingService.ChangeName("Test Blog Post", _initialTrackedItem, Email));
         }
 
         [Fact]

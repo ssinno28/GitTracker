@@ -77,6 +77,22 @@ namespace GitTracker.Providers
             return filePaths.Select(File.ReadAllText).ToList();
         }
 
+        public IList<string> GetFilesForContentItem(TrackedItem trackedItem)
+        {
+            IList<string> filePaths = new List<string>();
+            string fullPath = _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
+            string relativePath = Path.GetRelativePath(_localPathFactory.GetLocalPath(), fullPath);
+            string[] files = Directory.GetFiles(fullPath, "*", SearchOption.AllDirectories);
+
+            foreach (string file in files)
+            {
+                string fileName = Path.GetRelativePath(fullPath, file);
+                filePaths.Add(Path.Combine(relativePath, fileName).Replace("\\", "/"));
+            }
+
+            return filePaths;
+        }
+
         public async Task<bool> DeleteFiles(params TrackedItem[] trackedItems)
         {
             return await Task.Run(() =>

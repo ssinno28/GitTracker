@@ -105,7 +105,7 @@ namespace GitTracker.Interfaces
         /// <param name="newName"></param>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        Task<TrackedItem> ChangeName(string newName, TrackedItem trackedItem);
+        Task<TrackedItem> ChangeName(string newName, TrackedItem trackedItem, string email, string userName = null);
 
         /// <summary>
         /// Creates a new folder for a tracked item and moves all of the files into it
@@ -114,7 +114,7 @@ namespace GitTracker.Interfaces
         /// <param name="newName"></param>
         /// <param name="trackedItem"></param>
         /// <returns></returns>
-        Task<T> ChangeName<T>(string newName, T trackedItem) where T : TrackedItem;
+        Task<T> ChangeName<T>(string newName, T trackedItem, string email, string userName = null) where T : TrackedItem;
 
         /// <summary>
         /// Creates a draft for a tracked item

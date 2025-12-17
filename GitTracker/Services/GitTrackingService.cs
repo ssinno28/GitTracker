@@ -296,11 +296,6 @@ namespace GitTracker.Services
             string path = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
             var paths = new List<string> { path };
 
-            if (trackedItem.PreviousPaths != null && trackedItem.PreviousPaths.Any())
-            {
-                paths.AddRange(trackedItem.PreviousPaths);
-            }
-
             return await GetTrackedItemDiffs(paths, currentCommitId, newCommitId);
         }
 
@@ -393,15 +388,7 @@ namespace GitTracker.Services
         {
             var history = new TrackedItemHistory();
 
-            var relativeTrackedItemPath =
-                _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
-
-            var paths = new List<string> { relativeTrackedItemPath };
-            if (trackedItem.PreviousPaths != null && trackedItem.PreviousPaths.Any())
-            {
-                paths.AddRange(trackedItem.PreviousPaths);
-            }
-
+            var paths = _fileProvider.GetFilesForContentItem(trackedItem);
             history.Commits = _gitRepo.GetCommits(page, pageSize, paths);
             history.Count = _gitRepo.Count(paths);
 
@@ -612,8 +599,7 @@ namespace GitTracker.Services
 
             var unstagedItems =
                 _gitRepo.GetUnstagedItems().Where(x =>
-                    x.Contains(relativeTrackedItemPath) ||
-                    trackedItem.PreviousPaths != null && trackedItem.PreviousPaths.Any(x.Contains));
+                    x.Contains(relativeTrackedItemPath));
 
             return _gitRepo.Stage(unstagedItems.ToArray());
         }
@@ -625,8 +611,7 @@ namespace GitTracker.Services
 
             var unstagedItems =
                 _gitRepo.GetStagedItems().Where(x =>
-                    x.Contains(relativeTrackedItemPath) ||
-                    trackedItem.PreviousPaths != null && trackedItem.PreviousPaths.Any(x.Contains));
+                    x.Contains(relativeTrackedItemPath));
 
             return _gitRepo.Unstage(unstagedItems.ToArray());
         }
@@ -694,22 +679,28 @@ namespace GitTracker.Services
             return trackedItems;
         }
 
-        public async Task<T> ChangeName<T>(string newName, T trackedItem) where T : TrackedItem
+        public async Task<T> ChangeName<T>(string newName, T trackedItem, string email, string userName = null) where T : TrackedItem
         {
-            return (T)await ChangeName(newName, (TrackedItem)trackedItem);
+            return (T)await ChangeName(newName, (TrackedItem)trackedItem, email, userName);
         }
 
-        public async Task<TrackedItem> ChangeName(string newName, TrackedItem trackedItem)
+        public async Task<TrackedItem> ChangeName(string newName, TrackedItem trackedItem, string email, string userName = null)
         {
-            trackedItem.PreviousPaths ??= new List<string>();
+            string commitMsg = $"Renamed {trackedItem.Name} to {newName}";
 
-            // make sure we add the previous path before changing the name!
-            trackedItem.PreviousPaths.Add(_pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem));
+            var currentContentItemPath = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
+            trackedItem.Name = newName;
 
-            await _fileProvider.MoveFile(newName, trackedItem);
+             var newContentItemPath = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
+            _gitRepo.MoveFile(currentContentItemPath, newContentItemPath);
+
+            await Commit(commitMsg, email, userName);
 
             await _fileProvider.UpsertFiles(trackedItem);
             await PerformUpdate(trackedItem);
+
+            Stage(trackedItem);
+            await Commit($"Updated {trackedItem.Name} content item.", email, userName);
 
             return trackedItem;
         }

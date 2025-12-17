@@ -178,6 +178,60 @@ namespace GitTracker.Repositories
             }
         }
 
+        public bool MoveFile(string oldPath, string newPath)
+        {
+            using (var repo = LocalRepo)
+            {
+                try
+                {
+                    string localRepoPath = _localPathFactory.GetLocalPath();
+                    string fullOldPath = Path.Combine(localRepoPath, oldPath);
+                    
+                    // Check if oldPath is a directory
+                    if (Directory.Exists(fullOldPath))
+                    {
+                        // Handle directory move - get all files recursively
+                        string[] files = Directory.GetFiles(fullOldPath, "*", SearchOption.AllDirectories);
+                        
+                        foreach (string file in files)
+                        {
+                            // Calculate relative path from the old directory
+                            string relativePath = Path.GetRelativePath(fullOldPath, file);
+                            
+                            // Create the corresponding new path
+                            string oldRelativeFilePath = Path.Combine(oldPath, relativePath).Replace('\\', '/');
+                            string newRelativeFilePath = Path.Combine(newPath, relativePath).Replace('\\', '/');
+                            
+                            // Ensure the destination directory exists
+                            string newFileFullPath = Path.Combine(localRepoPath, newRelativeFilePath);
+                            string newFileDirectory = Path.GetDirectoryName(newFileFullPath);
+                            if (!Directory.Exists(newFileDirectory))
+                            {
+                                Directory.CreateDirectory(newFileDirectory);
+                            }
+                            
+                            // Move the individual file using Git commands
+                            Commands.Move(repo, oldRelativeFilePath, newRelativeFilePath);
+                        }
+                    }
+                    else
+                    {
+                        // Handle single file move
+                        Commands.Move(repo, oldPath, newPath);
+                    }
+                    
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Could not move {oldPath} to {newPath}");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public RevertStatus RevertCommit(string commitId, string email, string userName = null)
         {
             RevertStatus revertStatus;
@@ -666,7 +720,7 @@ namespace GitTracker.Repositories
                             _logger.LogWarning(ex, $"Could not query commits for path: {path}");
                         }
                     }
-                    
+
                     count = uniqueCommitIds.Count;
                 }
                 else
@@ -1039,7 +1093,7 @@ namespace GitTracker.Repositories
             List<GitCommit> commits = new List<GitCommit>();
             using (var repo = LocalRepo)
             {
-                foreach (var logEntry in repo.Commits.QueryBy(path))
+                foreach (var logEntry in repo.Commits.QueryBy(path, new CommitFilter() { SortBy = CommitSortStrategies.Topological }))
                 {
                     commits.Add(new GitCommit
                     {
