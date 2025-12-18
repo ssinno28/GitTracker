@@ -776,8 +776,7 @@ namespace GitTracker.Services
             var contentType = GetContentType(document);
             var serializerSettings = new JsonSerializerSettings
             {
-                ContractResolver = _contentContractResolver,
-                TypeNameHandling = TypeNameHandling.Auto
+                ContractResolver = _contentContractResolver
             };
 
             var trackedItem = (TrackedItem)JsonConvert.DeserializeObject(document, contentType, serializerSettings);

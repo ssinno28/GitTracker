@@ -754,6 +754,10 @@ namespace GitTracker.Repositories
             using (var repo = LocalRepo)
             {
                 List<Commit> commitList = new List<Commit>();
+                var commitFilter = new CommitFilter
+                {
+                    IncludeReachableFrom = id
+                };
 
                 if (paths == null || !paths.Any())
                 {
@@ -763,16 +767,16 @@ namespace GitTracker.Repositories
                 {
                     foreach (var path in paths)
                     {
-                        var commitFilter = new CommitFilter
-                        {
-                            IncludeReachableFrom = id
-                        };
-
                         commitList.AddRange(repo.Commits.QueryBy(path, commitFilter)
                             .ToList()
                             .Select(entry => entry.Commit)
                             .ToList());
                     }
+                }
+
+                if (!commitList.Any())
+                {
+                    return new List<GitDiff>();
                 }
 
                 commitList.Add(null); // Added to show correct initial add
