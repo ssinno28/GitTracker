@@ -622,6 +622,20 @@ namespace GitTracker.Tests
             _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(Models.Tag), It.IsAny<TrackedItem>()))
                 .Returns("/tags/test-tag.json");
 
+            _mockFileProvider.Setup(x => x.GetFilesForTrackedItems(It.IsAny<Type>(), null))
+                .Returns<Type, TrackedItem?>((type, item) =>
+                {
+                    if (type == typeof(BlogPost))
+                    {
+                        return new List<string> { $"/blog-posts/{blogPostGuid}.json" };
+                    }
+                    else if (type == typeof(Models.Tag))
+                    {
+                        return new List<string> { $"/tags/{tagGuid}.json" };
+                    }
+                    return new List<string>();
+                });
+
             // Act
             var result = await _gitTrackingService.GetTrackedItemDiffs(trackedTypes, "commit1", "commit2");
 

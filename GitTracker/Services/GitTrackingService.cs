@@ -274,8 +274,8 @@ namespace GitTracker.Services
 
         public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(Type trackedType, string currentCommitId = null, string newCommitId = null)
         {
-            string path = _pathProvider.GetRelativeTrackedItemPath(trackedType);
-            return await GetTrackedItemDiffs(new List<string> { path }, currentCommitId, newCommitId);
+            var trackedTypePaths = _fileProvider.GetFilesForTrackedItems(trackedType);
+            return await GetTrackedItemDiffs(trackedTypePaths, currentCommitId, newCommitId);
         }
 
         public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(IList<Type> trackedTypes, string currentCommitId = null, string newCommitId = null)
@@ -283,8 +283,8 @@ namespace GitTracker.Services
             var paths = new List<string>();
             foreach (var trackedType in trackedTypes)
             {
-                string path = _pathProvider.GetRelativeTrackedItemPath(trackedType);
-                paths.Add(path);
+                var trackedTypePaths = _fileProvider.GetFilesForTrackedItems(trackedType);
+                paths.AddRange(trackedTypePaths);
             }
 
             return await GetTrackedItemDiffs(paths, currentCommitId, newCommitId);
@@ -293,9 +293,7 @@ namespace GitTracker.Services
         public async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(TrackedItem trackedItem,
             string currentCommitId = null, string newCommitId = null)
         {
-            string path = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
-            var paths = new List<string> { path };
-
+            var paths = _fileProvider.GetFilesForTrackedItems(trackedItem.GetType(), trackedItem);
             return await GetTrackedItemDiffs(paths, currentCommitId, newCommitId);
         }
 
@@ -388,7 +386,7 @@ namespace GitTracker.Services
         {
             var history = new TrackedItemHistory();
 
-            var paths = _fileProvider.GetFilesForContentItem(trackedItem);
+            var paths = _fileProvider.GetFilesForTrackedItems(trackedItem.GetType(), trackedItem);
             history.Commits = _gitRepo.GetCommits(page, pageSize, paths);
             history.Count = _gitRepo.Count(paths);
 
@@ -398,10 +396,7 @@ namespace GitTracker.Services
         public TrackedItemHistory GetHistory(Type trackedItemType, int page = 1, int pageSize = 10)
         {
             var history = new TrackedItemHistory();
-
-            var relativeTrackedItemPath =
-                _pathProvider.GetRelativeTrackedItemPath(trackedItemType);
-            var paths = new List<string> { relativeTrackedItemPath };
+            var paths = _fileProvider.GetFilesForTrackedItems(trackedItemType);
 
             history.Commits = _gitRepo.GetCommits(page, pageSize, paths);
             history.Count = _gitRepo.Count(paths);
@@ -496,7 +491,7 @@ namespace GitTracker.Services
                     if (!string.IsNullOrEmpty(fileContents.BaseFile))
                     {
                         valueProviderConflict.BasePath = Path.Combine(localPath, $"{conflict.Ancestor.Path}.BASE");
-                        File.WriteAllText(valueProviderConflict.BasePath, fileContents.BaseFile);
+                        await File.WriteAllTextAsync(valueProviderConflict.BasePath, fileContents.BaseFile);
 
                         if (propertyInfo != null)
                         {
@@ -504,8 +499,8 @@ namespace GitTracker.Services
                         }
                     }
 
-                    File.WriteAllText(valueProviderConflict.LocalPath, fileContents.OurFile);
-                    File.WriteAllText(valueProviderConflict.RemotePath, fileContents.TheirFile);
+                    await File.WriteAllTextAsync(valueProviderConflict.LocalPath, fileContents.OurFile);
+                    await File.WriteAllTextAsync(valueProviderConflict.RemotePath, fileContents.TheirFile);
 
                     trackedItemConflict.ValueProviderConflicts.Add(valueProviderConflict);
                 }

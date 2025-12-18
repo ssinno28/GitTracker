@@ -15,6 +15,6 @@ namespace GitTracker.Interfaces
         Task<bool> UpsertFiles(params TrackedItem[] trackedItems);
         Task<bool> MoveFile(string newName, TrackedItem trackedItem);
         string GetTrackedItemJsonForPath(string path);
-        IList<string> GetFilesForContentItem(TrackedItem trackedItem);
+        IList<string> GetFilesForTrackedItems(Type trackedType, TrackedItem? trackedItem = null);
     }
 }

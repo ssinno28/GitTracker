@@ -77,12 +77,12 @@ namespace GitTracker.Providers
             return filePaths.Select(File.ReadAllText).ToList();
         }
 
-        public IList<string> GetFilesForContentItem(TrackedItem trackedItem)
+        public IList<string> GetFilesForTrackedItems(Type trackedType, TrackedItem? trackedItem = null)
         {
             IList<string> filePaths = new List<string>();
-            string fullPath = _pathProvider.GetTrackedItemPath(trackedItem.GetType(), trackedItem);
+            string fullPath = _pathProvider.GetTrackedItemPath(trackedType, trackedItem);
             string relativePath = Path.GetRelativePath(_localPathFactory.GetLocalPath(), fullPath);
-            string[] files = Directory.GetFiles(fullPath, "*", SearchOption.AllDirectories);
+            string[] files = Directory.GetFiles(fullPath,"*", SearchOption.AllDirectories);
 
             foreach (string file in files)
             {

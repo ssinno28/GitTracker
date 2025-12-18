@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using GitTracker.Dictionary;
+using GitTracker.Helpers;
 using GitTracker.Interfaces;
 using GitTracker.Models;
 using LibGit2Sharp;

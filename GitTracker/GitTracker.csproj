@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Version>0.0.60</Version>
+    <Version>0.0.61</Version>
     <RepositoryUrl>https://github.com/ssinno28/GitTracker</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Description>This is an experimental library that allows you to use git to version control your content.</Description>
