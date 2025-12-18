@@ -82,8 +82,13 @@ namespace GitTracker.Providers
             IList<string> filePaths = new List<string>();
             string fullPath = _pathProvider.GetTrackedItemPath(trackedType, trackedItem);
             string relativePath = Path.GetRelativePath(_localPathFactory.GetLocalPath(), fullPath);
-            string[] files = Directory.GetFiles(fullPath,"*", SearchOption.AllDirectories);
 
+            if(!Directory.Exists(fullPath))
+            {
+                return filePaths;
+            }
+
+            string[] files = Directory.GetFiles(fullPath,"*", SearchOption.AllDirectories);
             foreach (string file in files)
             {
                 string fileName = Path.GetRelativePath(fullPath, file);
