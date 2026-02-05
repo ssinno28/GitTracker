@@ -43,7 +43,10 @@ namespace GitTracker.Providers
         public string GetTrackedItemJsonForPath(string path)
         {
             string absolutePath = Path.Combine(_localPathFactory.GetLocalPath(), path);
-            string directory = Path.GetDirectoryName(absolutePath);
+            string directory = 
+                _fileSystem.Directory.Exists(absolutePath) 
+                    ? absolutePath 
+                    : Path.GetDirectoryName(absolutePath);
 
             var trackedItemPath =
                 _fileSystem.Directory.GetFiles(directory, "*.json", SearchOption.AllDirectories)
