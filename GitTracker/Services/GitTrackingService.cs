@@ -297,6 +297,14 @@ namespace GitTracker.Services
             return await GetTrackedItemDiffs(paths, currentCommitId, newCommitId);
         }
 
+        private async Task<TrackedItem> GetTrackedItemFromPath(string filePath)
+        {
+            var trackedItemPath = _fileProvider.GetTrackedItemJsonForPath(filePath);
+            var trackedItemJson = _fileProvider.GetFile(trackedItemPath);
+
+            return await DeserializeContentItem(trackedItemJson);
+        }
+
         private async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(IList<string> paths, string currentCommitId = null, string newCommitId = null)
         {
             IList<TrackedItemDiff> trackedItemDiffs = new List<TrackedItemDiff>();
@@ -347,6 +355,7 @@ namespace GitTracker.Services
                     trackedItemDiff.ValueProviderDiffs.Add(gitDiff);
                     if (trackedItemDiff.Initial == null && trackedItemDiff.Final == null)
                     {
+                        trackedItemDiff.Final = await GetTrackedItemFromPath(Path.GetDirectoryName(gitDiff.Path));
                         continue;
                     }
 
