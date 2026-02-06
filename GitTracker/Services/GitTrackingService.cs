@@ -563,7 +563,7 @@ namespace GitTracker.Services
             return await Create(contentItem);
         }
 
-        private async Task SetNonJsonValues(TrackedItem trackedItem)
+        private async Task SetNonJsonValues(TrackedItem trackedItem, bool executeValueProvider = true)
         {
             foreach (var propertyInfo in trackedItem.GetType().GetProperties())
             {
@@ -572,8 +572,12 @@ namespace GitTracker.Services
 
                 if (valueProvider != null)
                 {
-                    var value = await valueProvider.GetValue(trackedItem, propertyInfo);
-                    propertyInfo.SetValue(trackedItem, value);
+                    var getValue = executeValueProvider || valueProvider.IgnoreInJson;
+                    if (getValue)
+                    {
+                        var value = await valueProvider.GetValue(trackedItem, propertyInfo);
+                        propertyInfo.SetValue(trackedItem, value);
+                    }
                 }
             }
         }
@@ -789,7 +793,7 @@ namespace GitTracker.Services
             };
 
             var trackedItem = (TrackedItem)JsonConvert.DeserializeObject(document, contentType, serializerSettings);
-            await SetNonJsonValues(trackedItem);
+            await SetNonJsonValues(trackedItem, false);
 
             return trackedItem;
         }

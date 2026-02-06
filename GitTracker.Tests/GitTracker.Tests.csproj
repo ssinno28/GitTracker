@@ -28,4 +28,8 @@
     <ProjectReference Include="..\GitTracker\GitTracker.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="ValueProviders\" />
+  </ItemGroup>
+
 </Project>

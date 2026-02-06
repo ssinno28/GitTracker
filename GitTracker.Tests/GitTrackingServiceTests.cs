@@ -696,6 +696,76 @@ namespace GitTracker.Tests
         }
 
         [Fact]
+        public async Task Test_GetTrackedItem_Returns_TrackedItem_From_FileProvider_SkipsValueProvider()
+        {
+            // Arrange
+            var blogPost = new BlogPost
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = "Test Blog Post"
+            };
+
+            var relativePath = $"/blog-post/";
+            var expectedJson = "{\"Id\":\"test-id\",\"Name\":\"Test Blog Post\",\"TypeDefinition\":\"BlogPost\"}";
+
+            _mockValueProvider.Setup(x => x.IsMatch(It.IsAny<PropertyInfo>()))
+                .Returns(true); // Simulate all properties matched by ValueProvider
+
+            _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost))
+                .Returns(relativePath);
+
+            _mockFileProvider.Setup(x => x.GetFile(It.IsAny<string>()))
+                .Returns(expectedJson);
+
+            // Act
+            var result = await _gitTrackingService.GetTrackedItem(typeof(BlogPost), blogPost);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("Test Blog Post", result.Name);
+            _mockPathProvider.Verify(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost), Times.Once);
+            _mockFileProvider.Verify(x => x.GetFile(It.IsAny<string>()), Times.Once);
+            _mockValueProvider.Verify(x => x.GetValue(It.IsAny<TrackedItem>(), It.IsAny<PropertyInfo>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Test_Create_RunsValueProvider()
+        {
+            // Arrange
+            var blogPost = new BlogPost
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = "Test Blog Post"
+            };
+
+            var relativePath = $"/blog-post/";
+            var expectedJson = "{\"Id\":\"test-id\",\"Name\":\"Test Blog Post\",\"TypeDefinition\":\"BlogPost\"}";
+
+            _mockValueProvider.Setup(x => x.IsMatch(It.Is<PropertyInfo>(p => p.Name == "Name")))
+                .Returns(true);
+            _mockValueProvider.Setup(x => x.GetValue(It.IsAny<TrackedItem>(), It.IsAny<PropertyInfo>()))
+                .ReturnsAsync("Test Blog Post");
+
+            _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost))
+                .Returns(relativePath);
+
+            _mockFileProvider.Setup(x => x.GetFile(It.IsAny<string>()))
+                .Returns(expectedJson);
+
+            _mockFileSystem
+                .Setup(x => x.Directory.Exists(It.IsAny<string>()))
+                .Returns(false);
+
+            // Act
+            var result = await _gitTrackingService.Create(blogPost);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("Test Blog Post", result.Name);
+            _mockValueProvider.Verify(x => x.GetValue(It.IsAny<TrackedItem>(), It.IsAny<PropertyInfo>()), Times.AtLeastOnce);
+        }
+
+        [Fact]
         public async Task Test_GetTrackedItem_Returns_Null_When_FileProvider_Returns_Null()
         {
             // Arrange
