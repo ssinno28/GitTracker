@@ -329,6 +329,30 @@ namespace GitTracker.Tests
             Assert.NotEmpty(diff);
             Assert.NotEmpty(diff.First().ValueProviderDiffs);
             Assert.NotNull(diff.First().Final);
+            Assert.NotNull(diff.First().Initial);
+        }
+
+        [Fact]
+        public async Task Test_Get_Diff_FromHead_Delete_Value_Provider()
+        {
+            string contentItemPath = PathProvider.GetTrackedItemPath(typeof(BlogPost), _initialTrackedItem);
+            string filePath = Path.Combine(contentItemPath, "body.md");
+
+            await File.WriteAllTextAsync(filePath, "My Test Body");
+            _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
+            
+            GitTrackingService.Stage(_initialTrackedItem);
+            await GitTrackingService.Commit("Test", "test", "test");
+
+            File.Delete(filePath);
+
+            _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
+
+            var diff = await GitTrackingService.GetTrackedItemDiffs();
+            Assert.NotEmpty(diff);
+            Assert.NotEmpty(diff.First().ValueProviderDiffs);
+            Assert.Null(diff.First().Final);
+            Assert.NotNull(diff.First().Initial);
         }
 
         [Fact]
@@ -347,6 +371,7 @@ namespace GitTracker.Tests
             var diff = await GitTrackingService.GetTrackedItemDiffs();
             Assert.NotEmpty(diff);
             Assert.NotEmpty(diff.First().ValueProviderDiffs);
+            Assert.NotNull(diff.First().Final);
         }
 
         [Fact]

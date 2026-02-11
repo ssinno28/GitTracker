@@ -353,10 +353,14 @@ namespace GitTracker.Services
                 foreach (var gitDiff in valueProviderDiffs)
                 {
                     trackedItemDiff.ValueProviderDiffs.Add(gitDiff);
-                    if (trackedItemDiff.Initial == null && trackedItemDiff.Final == null)
+                    if (trackedItemDiff.Final == null && gitDiff.ChangeKind != ChangeKind.Deleted)
                     {
                         trackedItemDiff.Final = await GetTrackedItemFromPath(Path.GetDirectoryName(gitDiff.Path));
-                        continue;
+                    }
+
+                    if ((gitDiff.ChangeKind == ChangeKind.Modified || gitDiff.ChangeKind == ChangeKind.Deleted) && trackedItemDiff.Initial == null)
+                    {
+                        trackedItemDiff.Initial = await GetTrackedItemFromPath(Path.GetDirectoryName(gitDiff.Path));
                     }
 
                     Type trackedItemType;
