@@ -324,6 +324,10 @@ namespace GitTracker.Tests
             await File.WriteAllTextAsync(filePath, "My Test Body");
 
             _initialTrackedItem = await GitTrackingService.Update(_initialTrackedItem);
+            GitTrackingService.Stage(_initialTrackedItem);
+            await GitTrackingService.Commit("Test", "test", "test");
+
+            await File.WriteAllTextAsync(filePath, "My Test Body 2");
 
             var diff = await GitTrackingService.GetTrackedItemDiffs();
             Assert.NotEmpty(diff);
