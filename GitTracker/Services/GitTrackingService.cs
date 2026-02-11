@@ -200,13 +200,16 @@ namespace GitTracker.Services
         {
             var contentItem = diff.Initial ?? diff.Final;
 
-            if (diff.TrackedItemGitDiff.ChangeKind == ChangeKind.Added)
+            if (diff.TrackedItemGitDiff != null)
             {
-                await _fileProvider.DeleteFileFromRelativePath(diff.TrackedItemGitDiff.Path);
-            }
-            else
-            {
-                _gitRepo.ResetFileChanges(diff.TrackedItemGitDiff.Path);
+                if (diff.TrackedItemGitDiff.ChangeKind == ChangeKind.Added)
+                {
+                    await _fileProvider.DeleteFileFromRelativePath(diff.TrackedItemGitDiff.Path);
+                }
+                else
+                {
+                    _gitRepo.ResetFileChanges(diff.TrackedItemGitDiff.Path);
+                }
             }
 
             foreach (var valueProviderDiff in diff.ValueProviderDiffs)
@@ -221,11 +224,12 @@ namespace GitTracker.Services
                 }
             }
 
-            if (diff.TrackedItemGitDiff.ChangeKind == ChangeKind.Added)
+            ChangeKind changeKind = diff.TrackedItemGitDiff?.ChangeKind ?? ChangeKind.Modified;
+            if (changeKind == ChangeKind.Added)
             {
                 await PerformDelete(contentItem);
             }
-            else if (diff.TrackedItemGitDiff.ChangeKind == ChangeKind.Deleted)
+            else if (changeKind == ChangeKind.Deleted)
             {
                 await PerformCreate(contentItem);
             }

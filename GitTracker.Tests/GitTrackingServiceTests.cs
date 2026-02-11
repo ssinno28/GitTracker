@@ -301,6 +301,44 @@ namespace GitTracker.Tests
         }
 
         [Fact]
+        public async Task Test_ResetFileChanges_With_Only_Modified_ValueProvider()
+        {
+            // Arrange
+            var blogPost = new BlogPost
+            {
+                Id = "test-id",
+                Name = "Test Blog Post"
+            };
+
+            var diff = new TrackedItemDiff
+            {
+                Final = blogPost,
+                ValueProviderDiffs = new List<GitDiff>()
+                {
+                    new GitDiff()
+                    {
+                        Path = "/blog-posts/body.md",
+                        ChangeKind = ChangeKind.Added
+                    }
+                }
+            };
+
+            _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost))
+                .Returns("/blog-posts/body.md");
+
+            _mockUpdateOperation.Setup(x => x.IsMatch(typeof(BlogPost)))
+                .Returns(true);
+
+            // Act
+            await _gitTrackingService.ResetFileChanges(diff);
+
+            // Assert
+            _mockFileProvider.Verify(x => x.DeleteFileFromRelativePath(It.IsAny<string>()), Times.Once);
+            _mockUpdateOperation.Verify(x => x.Update(blogPost), Times.Once);
+            _mockGitRepo.Verify(x => x.ResetFileChanges(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
         public async Task Test_ResetFileChanges_With_Added_ChangeKind_And_ValueProviderDiffs_Calls_DeleteFile()
         {
             // Arrange
