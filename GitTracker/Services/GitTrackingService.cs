@@ -560,8 +560,12 @@ namespace GitTracker.Services
             }
 
             string fileContent = _fileProvider.GetFile(path);
-            var trackedItem = await DeserializeContentItem(fileContent);
+            if (fileContent == null)
+            {
+                return null;
+            }
 
+            var trackedItem = await DeserializeContentItem(fileContent);
             return trackedItem;
         }
 
@@ -692,6 +696,7 @@ namespace GitTracker.Services
 
                 trackedItems.Add(trackedItem);
             }
+
             return trackedItems;
         }
 

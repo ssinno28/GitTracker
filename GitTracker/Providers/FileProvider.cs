@@ -37,6 +37,11 @@ namespace GitTracker.Providers
         public string GetFile(string path)
         {
             string absolutePath = Path.Combine(_localPathFactory.GetLocalPath(), path);
+            if (!_fileSystem.File.Exists(absolutePath))
+            {
+                return null;
+            }
+
             return _fileSystem.File.ReadAllText(absolutePath);
         }
 
