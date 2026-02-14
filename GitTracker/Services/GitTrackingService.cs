@@ -689,7 +689,7 @@ namespace GitTracker.Services
             foreach (var stagedFile in stagedFiles)
             {
                 var trackedItem = await GetTrackedItem(stagedFile);
-                if (trackedItems.Any(x => x.Id.Equals(trackedItem.Id)))
+                if (trackedItem == null || trackedItems.Any(x => x.Id.Equals(trackedItem.Id)))
                 {
                     continue;
                 }
