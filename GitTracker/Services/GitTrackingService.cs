@@ -311,8 +311,6 @@ namespace GitTracker.Services
 
         private async Task<IList<TrackedItemDiff>> GetTrackedItemDiffs(IList<string> paths, string currentCommitId = null, string newCommitId = null)
         {
-            IList<TrackedItemDiff> trackedItemDiffs = new List<TrackedItemDiff>();
-
             IList<GitDiff> diffs;
             if (!string.IsNullOrEmpty(currentCommitId) && !string.IsNullOrEmpty(newCommitId))
             {
@@ -327,76 +325,122 @@ namespace GitTracker.Services
                 diffs = _gitRepo.GetDiffFromHead();
             }
 
-            foreach (var diffGrouping in diffs.GroupBy(x => Path.GetDirectoryName(x.Path)))
+            if (diffs.Count == 0)
             {
-                var trackedItemDiff = new TrackedItemDiff
-                {
-                    ValueProviderDiffs = new List<GitDiff>()
-                };
-
-                foreach (var gitDiff in diffGrouping.Where(x => x.Path.EndsWith(".json")))
-                {
-                    if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
-                    {
-                        continue;
-                    }
-
-                    trackedItemDiff.Initial = await DeserializeContentItem(gitDiff.InitialFileContent);
-                    trackedItemDiff.Final = await DeserializeContentItem(gitDiff.FinalFileContent);
-
-                    trackedItemDiff.TrackedItemGitDiff = gitDiff;
-                }
-
-                var valueProviderDiffs =
-                    diffGrouping.Where(x =>
-                        _valueProviders.Any(vp =>
-                            !string.IsNullOrEmpty(vp.Extension)
-                            && vp.Extension.Equals(Path.GetExtension(x.Path))
-                            ));
-
-                foreach (var gitDiff in valueProviderDiffs)
-                {
-                    trackedItemDiff.ValueProviderDiffs.Add(gitDiff);
-                    if (trackedItemDiff.Final == null && gitDiff.ChangeKind != ChangeKind.Deleted)
-                    {
-                        trackedItemDiff.Final = await GetTrackedItemFromPath(Path.GetDirectoryName(gitDiff.Path));
-                    }
-
-                    if ((gitDiff.ChangeKind == ChangeKind.Modified || gitDiff.ChangeKind == ChangeKind.Deleted) && trackedItemDiff.Initial == null)
-                    {
-                        trackedItemDiff.Initial = await GetTrackedItemFromPath(Path.GetDirectoryName(gitDiff.Path));
-                    }
-
-                    Type trackedItemType;
-                    switch (gitDiff.ChangeKind)
-                    {
-                        case ChangeKind.Deleted:
-                            trackedItemType = trackedItemDiff.Initial.GetType();
-                            break;
-                        default:
-                            trackedItemType = trackedItemDiff.Final.GetType();
-                            break;
-                    }
-
-                    var propertyInfo = GetValueProviderProperty(trackedItemType, gitDiff.Path);
-                    if (propertyInfo != null)
-                    {
-                        if (trackedItemDiff.Initial != null)
-                        {
-                            propertyInfo.SetValue(trackedItemDiff.Initial, gitDiff.InitialFileContent);
-                        }
-
-                        if (trackedItemDiff.Final != null)
-                        {
-                            propertyInfo.SetValue(trackedItemDiff.Final, gitDiff.FinalFileContent);
-                        }
-                    }
-                }
-
-                trackedItemDiffs.Add(trackedItemDiff);
+                return Array.Empty<TrackedItemDiff>();
             }
 
-            return trackedItemDiffs;
+            // Materialize value provider extensions into a HashSet for O(1) lookups
+            var valueProviderExtensions = new HashSet<string>(
+                _valueProviders
+                    .Where(vp => !string.IsNullOrEmpty(vp.Extension))
+                    .Select(vp => vp.Extension),
+                StringComparer.OrdinalIgnoreCase);
+
+            // Cache for reflection lookups: (Type, fileName) -> PropertyInfo
+            var propertyCache = new Dictionary<(Type, string), PropertyInfo?>();
+
+            var groupings = diffs.GroupBy(x => Path.GetDirectoryName(x.Path));
+
+            // Process all groupings in parallel
+            var tasks = groupings.Select(diffGrouping => ProcessDiffGroupingAsync(
+                diffGrouping, valueProviderExtensions, propertyCache));
+
+            var results = await Task.WhenAll(tasks);
+
+            return results.ToList();
+        }
+
+        private async Task<TrackedItemDiff> ProcessDiffGroupingAsync(
+            IGrouping<string, GitDiff> diffGrouping,
+            HashSet<string> valueProviderExtensions,
+            Dictionary<(Type, string), PropertyInfo?> propertyCache)
+        {
+            var trackedItemDiff = new TrackedItemDiff
+            {
+                ValueProviderDiffs = new List<GitDiff>()
+            };
+
+            // Partition diffs in a single pass instead of two Where() calls
+            var jsonDiffs = new List<GitDiff>();
+            var vpDiffs = new List<GitDiff>();
+
+            foreach (var gitDiff in diffGrouping)
+            {
+                string ext = Path.GetExtension(gitDiff.Path);
+                if (ext.Equals(".json", StringComparison.OrdinalIgnoreCase))
+                {
+                    jsonDiffs.Add(gitDiff);
+                }
+
+                if (valueProviderExtensions.Contains(ext))
+                {
+                    vpDiffs.Add(gitDiff);
+                }
+            }
+
+            // Process JSON tracked-item diffs — deserialize Initial/Final in parallel
+            foreach (var gitDiff in jsonDiffs)
+            {
+                if (!Guid.TryParse(Path.GetFileNameWithoutExtension(gitDiff.Path), out _))
+                {
+                    continue;
+                }
+
+                var initialTask = DeserializeContentItem(gitDiff.InitialFileContent);
+                var finalTask = DeserializeContentItem(gitDiff.FinalFileContent);
+
+                await Task.WhenAll(initialTask, finalTask);
+
+                trackedItemDiff.Initial = initialTask.Result;
+                trackedItemDiff.Final = finalTask.Result;
+                trackedItemDiff.TrackedItemGitDiff = gitDiff;
+            }
+
+            // Process value provider diffs
+            foreach (var gitDiff in vpDiffs)
+            {
+                trackedItemDiff.ValueProviderDiffs.Add(gitDiff);
+
+                string directoryName = Path.GetDirectoryName(gitDiff.Path);
+
+                if (trackedItemDiff.Final == null && gitDiff.ChangeKind != ChangeKind.Deleted)
+                {
+                    trackedItemDiff.Final = await GetTrackedItemFromPath(directoryName);
+                }
+
+                if ((gitDiff.ChangeKind == ChangeKind.Modified || gitDiff.ChangeKind == ChangeKind.Deleted)
+                    && trackedItemDiff.Initial == null)
+                {
+                    trackedItemDiff.Initial = await GetTrackedItemFromPath(directoryName);
+                }
+
+                Type trackedItemType = gitDiff.ChangeKind == ChangeKind.Deleted
+                    ? trackedItemDiff.Initial.GetType()
+                    : trackedItemDiff.Final.GetType();
+
+                var cacheKey = (trackedItemType, gitDiff.Path);
+                if (!propertyCache.TryGetValue(cacheKey, out var propertyInfo))
+                {
+                    propertyInfo = GetValueProviderProperty(trackedItemType, gitDiff.Path);
+                    propertyCache[cacheKey] = propertyInfo;
+                }
+
+                if (propertyInfo != null)
+                {
+                    if (trackedItemDiff.Initial != null)
+                    {
+                        propertyInfo.SetValue(trackedItemDiff.Initial, gitDiff.InitialFileContent);
+                    }
+
+                    if (trackedItemDiff.Final != null)
+                    {
+                        propertyInfo.SetValue(trackedItemDiff.Final, gitDiff.FinalFileContent);
+                    }
+                }
+            }
+
+            return trackedItemDiff;
         }
 
         public TrackedItemHistory GetHistory(TrackedItem trackedItem, int page = 1, int pageSize = 10)
