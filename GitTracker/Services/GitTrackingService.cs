@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 using System.Threading.Tasks;
 using GitTracker.Helpers;
 using GitTracker.Interfaces;
@@ -11,8 +12,6 @@ using GitTracker.Models;
 using GitTracker.Serializer;
 using LibGit2Sharp;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using IValueProvider = GitTracker.Interfaces.IValueProvider;
 
 namespace GitTracker.Services
@@ -831,7 +830,8 @@ namespace GitTracker.Services
 
         private Type GetContentType(string entity)
         {
-            string typeDefinition = JObject.Parse(entity).GetValue("TypeDefinition").Value<string>();
+            using var doc = JsonDocument.Parse(entity);
+            string typeDefinition = doc.RootElement.GetProperty("TypeDefinition").GetString();
             var trackedType = _gitConfig.TrackedTypes.FirstOrDefault(x => x.Name.Equals(typeDefinition));
             return trackedType ?? typeof(TrackedItem);
         }
@@ -844,12 +844,7 @@ namespace GitTracker.Services
             }
 
             var contentType = GetContentType(document);
-            var serializerSettings = new JsonSerializerSettings
-            {
-                ContractResolver = _contentContractResolver
-            };
-
-            var trackedItem = (TrackedItem)JsonConvert.DeserializeObject(document, contentType, serializerSettings);
+            var trackedItem = (TrackedItem)JsonSerializer.Deserialize(document, contentType, _contentContractResolver.Options);
             await SetNonJsonValues(trackedItem, false);
 
             return trackedItem;

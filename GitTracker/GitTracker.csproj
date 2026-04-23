@@ -8,12 +8,11 @@
     <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.7" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.IO.Abstractions" Version="22.0.15" />
   </ItemGroup>
 
   <PropertyGroup>
-    <Version>0.0.72</Version>
+    <Version>0.0.73</Version>
     <RepositoryUrl>https://github.com/ssinno28/GitTracker</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Description>This is an experimental library that allows you to use git to version control your content.</Description>

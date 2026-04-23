@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using GitTracker.Helpers;
 using GitTracker.Interfaces;
 using GitTracker.Models;
 using GitTracker.Serializer;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace GitTracker.Providers
 {
@@ -201,11 +201,8 @@ namespace GitTracker.Providers
                             _fileSystem.Directory.CreateDirectory(contentItemPath);
                         }
 
-                        string fileContents =
-                            JsonConvert.SerializeObject(trackedItem, Formatting.Indented, new JsonSerializerSettings
-                            {
-                                ContractResolver = _contentContractResolver
-                            });
+                        var fileContents = 
+                            JsonSerializer.Serialize(trackedItem, trackedItem.GetType(), _contentContractResolver.Options);
 
                         _fileSystem.File.WriteAllText(Path.Combine(contentItemPath, $"{trackedItem.Id}.json"), fileContents);
                     }

@@ -1,39 +1,59 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using GitTracker.Converters;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using IValueProvider = GitTracker.Interfaces.IValueProvider;
+using GitTracker.Interfaces;
+using GitTracker.Models;
 
 namespace GitTracker.Serializer
 {
-    public class ContentContractResolver : DefaultContractResolver
+    public class ContentContractResolver
     {
         private readonly IEnumerable<ContentJsonConverter> _jsonConverters;
         private readonly IEnumerable<IValueProvider> _valueProviders;
 
-        public ContentContractResolver(IEnumerable<ContentJsonConverter> jsonConverters, IEnumerable<IValueProvider> valueProviders)
+        public JsonSerializerOptions Options { get; }
+
+        public ContentContractResolver(
+            IEnumerable<ContentJsonConverter> jsonConverters,
+            IEnumerable<IValueProvider> valueProviders)
         {
             _jsonConverters = jsonConverters;
             _valueProviders = valueProviders;
+
+            Options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers = { ModifyTypeInfo }
+                }
+            };
         }
 
-        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+        private void ModifyTypeInfo(JsonTypeInfo typeInfo)
         {
-            JsonProperty property = base.CreateProperty(member, memberSerialization);
+            if (!typeof(TrackedItem).IsAssignableFrom(typeInfo.Type))
+                return;
 
-            var propertyInfo = member as PropertyInfo;
-            var valueProvider = _valueProviders.FirstOrDefault(x => x.IsMatch(propertyInfo));
-            property.ShouldSerialize = instance => !valueProvider?.IgnoreInJson ?? true;
-
-            var jsonConverter = _jsonConverters.FirstOrDefault(x => x.IsMatch(propertyInfo));
-            if (jsonConverter != null)
+            foreach (var property in typeInfo.Properties)
             {
-                property.Converter = jsonConverter;
-            }
+                if (property.AttributeProvider is not PropertyInfo memberInfo)
+                    continue;
 
-            return property;
+                var valueProvider = _valueProviders.FirstOrDefault(x => x.IsMatch(memberInfo));
+                if (valueProvider?.IgnoreInJson == true)
+                {
+                    property.ShouldSerialize = (_, _) => false;
+                }
+
+                var jsonConverter = _jsonConverters.FirstOrDefault(x => x.IsMatch(memberInfo));
+                if (jsonConverter != null)
+                {
+                    property.CustomConverter = jsonConverter;
+                }
+            }
         }
     }
 }
