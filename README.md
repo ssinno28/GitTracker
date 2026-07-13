@@ -119,6 +119,9 @@ public class ContentUpdateController : ControllerBase
 ```
 
 ## External Content Stores
+> [!IMPORTANT]
+> The files in the git repository are not meant to be used as a content store. They are meant to be a backup of your content and a way to track changes. You will want to use an external content store (like a database) to actually store your content.
+
 After syncing the content from the git repository, you will want to make sure that your external content store is also in sync. This is where the `ICreateOperation`, `IDeleteOperation` and `IUpdateOperation` interfaces come into play. Whenever a tracked item is created, updated or deleted, the appropriate operation will be called to make sure your external content store is in sync with the git repository.
 
 ```c#
