@@ -355,7 +355,7 @@ namespace GitTracker.Tests
             var diff = await GitTrackingService.GetTrackedItemDiffs();
             Assert.NotEmpty(diff);
             Assert.NotEmpty(diff.First().ValueProviderDiffs);
-            Assert.Null(diff.First().Final);
+            Assert.NotNull(diff.First().Final);
             Assert.NotNull(diff.First().Initial);
         }
 
