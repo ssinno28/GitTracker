@@ -1,6 +1,8 @@
 # GitTracker
 
 ![CI](https://github.com/ssinno28/GitTracker/workflows/CI/badge.svg)
+![NuGet Downloads](https://img.shields.io/nuget/dt/GitTracker)
+
 
 ## Getting Started
 
@@ -65,40 +67,43 @@ And if we go a little further we can see that most content items will have multp
 
 ![content-item](https://github.com/ssinno28/GitTracker/blob/master/readme-images/content-item.PNG)
 
-## Syncing Using GitHub WebHooks
+## Syncing Using GitHub Webhooks
 
 You'll need to create a personal access token as documented here: https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token. The personal access token will allow the program to push and pull from the remote repo. Another property to note is the `webhookSecret`. The webhook secret allows you to secure your webhook and is used in conjunction with the IGitRepo.IsGithubPushAllowed method. 
 
 ``` c#
-   public class ContentUpdateModule : NancyModule
+[ApiController]
+[Route("api/[controller]")]
+public class ContentUpdateController : ControllerBase
+{
+    private readonly IGitTrackingService _gitTrackingService;
+    private readonly IGitRepo _gitRepo;
+
+    public ContentUpdateController(IGitTrackingService gitTrackingService, IGitRepo gitRepo)
     {
-        private readonly IGitTrackingService _gitTrackingService;
-        private readonly IGitRepo _gitRepo;
-       
-        public ContentUpdateModule(IGitTrackingService gitTrackingService, IGitRepo gitRepo) : base("/api")
-        {
-            _gitTrackingService = gitTrackingService;
-            _gitRepo = gitRepo;
-
-            Post("contentupdate", async (o, token) =>
-            {
-                var signatureWithPrefix = Request.Headers["X-Hub-Signature"].FirstOrDefault();
-                using (var reader = new StreamReader(Request.Body))
-                {
-                    var txt = await reader.ReadToEndAsync();
-                    if (!_gitRepo.IsGithubPushAllowed(txt, signatureWithPrefix))
-                    {
-                        return HttpStatusCode.Unauthorized;
-                    }
-
-                    // Using theirs will make sure that there are never any merge conflicts
-                    await _gitTrackingService.Sync("your_email", CheckoutFileConflictStrategy.Theirs);
-
-                    return HttpStatusCode.Accepted;
-                }
-            });
-        }
+        _gitTrackingService = gitTrackingService;
+        _gitRepo = gitRepo;
     }
+
+    [HttpPost("contentupdate")]
+    public async Task<IActionResult> ContentUpdate()
+    {
+        var signatureWithPrefix = Request.Headers["X-Hub-Signature"].FirstOrDefault();
+
+        using var reader = new StreamReader(Request.Body);
+        var txt = await reader.ReadToEndAsync();
+
+        if (!_gitRepo.IsGithubPushAllowed(txt, signatureWithPrefix))
+        {
+            return Unauthorized();
+        }
+
+        // Using theirs will make sure that there are never any merge conflicts
+        await _gitTrackingService.Sync("your_email", CheckoutFileConflictStrategy.Theirs);
+
+        return Accepted();
+    }
+}
 ```
 
 
@@ -203,7 +208,6 @@ If the repository is currently in a state of conflict, then calling `gitTracking
         public TrackedItem Ancestor { get; set; }
         public TrackedItem Theirs { get; set; }
         public TrackedItem Ours { get; set; }
-        public IList<PropertyInfo> ChangedProperties { get; set; }
         public IList<ValueProviderConflict> ValueProviderConflicts { get; set; }
     }
 ```
