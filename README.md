@@ -3,6 +3,18 @@
 ![CI](https://github.com/ssinno28/GitTracker/workflows/CI/badge.svg)
 ![NuGet Downloads](https://img.shields.io/nuget/dt/GitTracker)
 
+## Table of Contents
+
+- [Getting Started](#getting-started)
+- [Content Storage](#content-storage)
+- [Syncing Using GitHub Webhooks](#syncing-using-github-webhooks)
+- [External Content Stores](#external-content-stores)
+- [Staging and Commiting](#staging-and-commiting)
+- [Changing Branches, Pulling and Pushing](#changing-branches-pulling-and-pushing)
+- [Value Providers](#value-providers)
+- [Viewing Diffs](#viewing-diffs)
+- [Merge Conflicts](#merge-conflicts)
+
 
 ## Getting Started
 
@@ -106,7 +118,24 @@ public class ContentUpdateController : ControllerBase
 }
 ```
 
+## External Content Stores
+After syncing the content from the git repository, you will want to make sure that your external content store is also in sync. This is where the `ICreateOperation`, `IDeleteOperation` and `IUpdateOperation` interfaces come into play. Whenever a tracked item is created, updated or deleted, the appropriate operation will be called to make sure your external content store is in sync with the git repository.
 
+```c#
+    public class BlogPostCreateOperation : ICreateOperation
+    {
+        private readonly IBlogPostService _blogPostService;
+        public BlogPostCreateOperation(IBlogPostService blogPostService)
+        {
+            _blogPostService = blogPostService;
+        }
+        public async Task Create(TrackedItem trackedItem)
+        {
+            var blogPost = trackedItem as BlogPost;
+            await _blogPostService.Create(blogPost);
+        }
+    }
+```
 
 ## Staging and Commiting
 
