@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace GitTracker.Models
 {
@@ -7,7 +8,12 @@ namespace GitTracker.Models
         public string Id { get; set; }
         public string Name { get; set; }
         public string TypeDefinition => GetType().Name;
-        public DateTimeOffset CreatedDate { get; set; }
-        public DateTimeOffset ModifiedDate { get; set; }
+        public IList<CommitReference> CommitReferences { get; set; } = new List<CommitReference>();
+    }
+
+    public class CommitReference
+    {
+        public string Sha { get; set; }
+        public DateTimeOffset CommitDate { get; set; }
     }
 }

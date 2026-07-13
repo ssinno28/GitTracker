@@ -92,6 +92,15 @@ namespace GitTracker.Tests
                 .Setup(x => x.GetRelativeTrackedItemPath(It.IsAny<Type>(), It.IsAny<TrackedItem>()))
                 .Returns("/test/path.json");
 
+            var gitCommits = new List<GitCommit>
+            {
+                new GitCommit { Id = "sha-1", Date = new DateTimeOffset(2024, 01, 01, 0, 0, 0, TimeSpan.Zero) },
+                new GitCommit { Id = "sha-2", Date = new DateTimeOffset(2024, 01, 02, 0, 0, 0, TimeSpan.Zero) }
+            };
+
+            _mockGitRepo.Setup(x => x.GetAllCommitsForPath("/test/path.json"))
+                .Returns(gitCommits);
+
             var diffs = new List<GitDiff>
             {
                 new GitDiff()
@@ -112,7 +121,12 @@ namespace GitTracker.Tests
             var result =
                 await _gitTrackingService.Update(blogPostToUpdate);
 
+            Assert.NotNull(result.CommitReferences);
+            Assert.Equal(2, result.CommitReferences.Count);
+            Assert.Equal("sha-1", result.CommitReferences[0].Sha);
+            Assert.Equal(gitCommits[0].Date, result.CommitReferences[0].CommitDate);
             _mockUpdateOperation.Verify(x => x.Update(It.IsAny<TrackedItem>()), Times.Once);
+            _mockGitRepo.Verify(x => x.GetAllCommitsForPath("/test/path.json"), Times.Once);
         }
 
         [Fact]
@@ -787,6 +801,14 @@ namespace GitTracker.Tests
             _mockPathProvider.Setup(x => x.GetRelativeTrackedItemPath(typeof(BlogPost), blogPost))
                 .Returns(relativePath);
 
+            var gitCommits = new List<GitCommit>
+            {
+                new GitCommit { Id = "create-sha-1", Date = new DateTimeOffset(2024, 02, 01, 0, 0, 0, TimeSpan.Zero) }
+            };
+
+            _mockGitRepo.Setup(x => x.GetAllCommitsForPath(relativePath))
+                .Returns(gitCommits);
+
             _mockFileProvider.Setup(x => x.GetFile(It.IsAny<string>()))
                 .Returns(expectedJson);
 
@@ -800,7 +822,11 @@ namespace GitTracker.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal("Test Blog Post", result.Name);
+            Assert.Single(result.CommitReferences);
+            Assert.Equal("create-sha-1", result.CommitReferences[0].Sha);
+            Assert.Equal(gitCommits[0].Date, result.CommitReferences[0].CommitDate);
             _mockValueProvider.Verify(x => x.GetValue(It.IsAny<TrackedItem>(), It.IsAny<PropertyInfo>()), Times.AtLeastOnce);
+            _mockGitRepo.Verify(x => x.GetAllCommitsForPath(relativePath), Times.Once);
         }
 
         [Fact]

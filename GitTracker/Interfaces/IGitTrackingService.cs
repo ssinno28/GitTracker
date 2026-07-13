@@ -117,25 +117,6 @@ namespace GitTracker.Interfaces
         Task<T> ChangeName<T>(string newName, T trackedItem, string email, string userName = null) where T : TrackedItem;
 
         /// <summary>
-        /// Creates a draft for a tracked item
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="contentType"></param>
-        /// <param name="trackedItem"></param>
-        /// <returns></returns>
-        Task<TrackedItem> CreateDraft(string name, Type contentType, TrackedItem trackedItem = null);
-
-        /// <summary>
-        /// Creates a draft for a tracked item
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="contentType"></param>
-        /// <param name="trackedItem"></param>
-        /// <returns></returns>
-        Task<T> CreateDraft<T>(string name, Type contentType, T trackedItem = null) where T : TrackedItem;
-
-        /// <summary>
         /// Stages all of the files associated with a tracked item
         /// </summary>
         /// <param name="trackedItem"></param>

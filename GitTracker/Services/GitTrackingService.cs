@@ -642,6 +642,18 @@ namespace GitTracker.Services
             CheckNameExists(trackedItem.GetType(), trackedItem);
             trackedItem.Id = Guid.NewGuid().ToString();
 
+            var relativeTrackedItemPath =
+                _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
+
+            var commits =
+                _gitRepo.GetAllCommitsForPath(relativeTrackedItemPath);
+            
+            trackedItem.CommitReferences = commits.Select(x => new CommitReference
+            {
+                Sha = x.Id,
+                CommitDate = x.Date
+            }).ToList();
+
             await SetNonJsonValues(trackedItem);
 
             await _fileProvider.UpsertFiles(trackedItem);
@@ -688,6 +700,18 @@ namespace GitTracker.Services
         {
             await SetNonJsonValues(trackedItem);
             await _fileProvider.UpsertFiles(trackedItem);
+
+            var relativeTrackedItemPath =
+                _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
+
+            var commits =
+                _gitRepo.GetAllCommitsForPath(relativeTrackedItemPath);
+
+            trackedItem.CommitReferences = commits.Select(x => new CommitReference
+            {
+                Sha = x.Id,
+                CommitDate = x.Date
+            }).ToList();
 
             var trackedItemPath = _pathProvider.GetRelativeTrackedItemPath(trackedItem.GetType(), trackedItem);
             var diff = _gitRepo.GetDiffFromHead(new List<string> { trackedItemPath });
@@ -772,30 +796,6 @@ namespace GitTracker.Services
 
             Stage(trackedItem);
             await Commit($"Updated {trackedItem.Name} content item.", email, userName);
-
-            return trackedItem;
-        }
-
-        public async Task<T> CreateDraft<T>(string name, Type contentType, T trackedItem = null) where T : TrackedItem
-        {
-            return (T)await CreateDraft(name, contentType, (TrackedItem)trackedItem);
-        }
-
-        public async Task<TrackedItem> CreateDraft(string name, Type contentType, TrackedItem trackedItem = null)
-        {
-            if (trackedItem == null)
-            {
-                trackedItem = (TrackedItem)Activator.CreateInstance(contentType);
-            }
-
-            trackedItem.Name = name;
-            trackedItem.Id = Guid.NewGuid().ToString();
-            trackedItem.CreatedDate = DateTimeOffset.Now;
-
-            CheckNameExists(contentType, trackedItem);
-
-            await _fileProvider.UpsertFiles(trackedItem);
-            await PerformCreate(trackedItem);
 
             return trackedItem;
         }
